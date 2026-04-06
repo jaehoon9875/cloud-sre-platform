@@ -177,17 +177,36 @@ fi
 # -----------------------------------------------------------------------------
 info "Step 7/7: Budget Alert 설정 중..."
 
+# billingbudgets API 활성화 완료 대기 (최대 60초)
+info "billingbudgets API 활성화 확인 중..."
+for i in $(seq 1 12); do
+  if gcloud services list --enabled --project="$PROJECT_ID" --quiet 2>/dev/null \
+      | grep -q "billingbudgets.googleapis.com"; then
+    break
+  fi
+  if [[ $i -eq 12 ]]; then
+    warn "billingbudgets API 활성화 타임아웃. Budget Alert를 건너뜁니다."
+    warn "나중에 수동으로 실행하세요: gcloud billing budgets create ..."
+    exit 0
+  fi
+  info "  대기 중... (${i}/12, 5초 간격)"
+  sleep 5
+done
+
 # --budget-amount: free trial $300 중 여유분 고려한 임계값
 # --threshold-rule: 80% ($200) 도달 시, 100% ($250) 도달 시 각각 이메일 알림 발송
-gcloud billing budgets create \
-  --billing-account="$BILLING_ACCOUNT_ID" \
-  --display-name="${PROJECT_ID}-budget-alert" \
-  --budget-amount=250USD \
-  --threshold-rule=percent=0.8 \
-  --threshold-rule=percent=1.0 \
-  --quiet 2>/dev/null || warn "Budget Alert 생성 실패 또는 이미 존재합니다. GCP 콘솔에서 직접 확인하세요."
-
-success "Budget Alert 설정 완료 (임계치: 80%, 100%)"
+if gcloud billing budgets create \
+    --billing-account="$BILLING_ACCOUNT_ID" \
+    --display-name="${PROJECT_ID}-budget-alert" \
+    --budget-amount=250USD \
+    --threshold-rule=percent=0.8 \
+    --threshold-rule=percent=1.0 \
+    --quiet 2>/dev/null; then
+  success "Budget Alert 설정 완료 (임계치: 80%, 100%)"
+else
+  warn "Budget Alert 생성 실패 — GCP 콘솔에서 직접 설정하세요."
+  warn "경로: 결제 > 예산 및 알림 > 예산 만들기"
+fi
 
 # -----------------------------------------------------------------------------
 # 완료 안내
