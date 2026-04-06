@@ -4,7 +4,7 @@
 
 | Stage | 내용 | 상태 |
 |-------|------|------|
-| Stage 1 | GCP 인프라 프로비저닝 (Terraform) | 🔲 진행 전 |
+| Stage 1 | GCP 인프라 프로비저닝 (Terraform) | 🔄 진행 중 |
 | Stage 2 | Observability Stack 이전 (ArgoCD + Helm) | 🔲 진행 전 |
 | Stage 3 | FinOps + Python 자동화 | 🔲 진행 전 |
 | Stage 4 | Go Custom Exporter | 🔲 진행 전 |
@@ -18,10 +18,10 @@
 ### 체크리스트
 
 **GCP 초기 설정**
-- [ ] GCP 프로젝트 생성
-- [ ] 필요한 API 활성화 (GKE, Artifact Registry, BigQuery, Billing)
-- [ ] Terraform 서비스 계정 생성 및 권한 설정
-- [ ] Terraform state 저장용 GCS bucket 생성
+- [x] GCP 프로젝트 생성
+- [x] 필요한 API 활성화 (GKE, Artifact Registry, BigQuery, Billing)
+- [x] Terraform 서비스 계정 생성 및 권한 설정
+- [x] Terraform state 저장용 GCS bucket 생성
 
 **Terraform 구성**
 - [ ] `modules/vpc`: VPC, Subnet, Firewall 구성
@@ -31,7 +31,7 @@
 - [ ] Terraform plan / apply 검증
 
 **FinOps 기반 설정**
-- [ ] GCP Budget Alert 설정 ($250 임계치)
+- [x] GCP Budget Alert 설정 ($250 임계치)
 - [ ] BigQuery billing export 활성화
 - [ ] `make cluster-down` / `make cluster-up` Makefile 작성
 - [ ] GitHub Actions: 야간 자동 scale-down workflow

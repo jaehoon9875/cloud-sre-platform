@@ -68,7 +68,7 @@ cloud-sre-platform/
 
 ## 현재 진행 상태
 
-현재 **Stage 1 시작 전** (전체 4단계 중)
+현재 **Stage 1 진행 중** (전체 4단계 중) — GCP 초기 설정 완료, Terraform 모듈 작성 단계
 
 단계별 체크리스트 → [docs/PLAN.md](docs/PLAN.md)
 진행 중 이슈 → [docs/ISSUES.md](docs/ISSUES.md)
@@ -89,3 +89,7 @@ cloud-sre-platform/
   변경은 반드시 `infra/` 파일 수정 → Git push → ArgoCD sync 경로로만 반영한다.
 - GCP 크레딧($300 free trial)을 고려하여 리소스 생성·변경 시 비용 영향을 먼저 검토한다.
 - 환경변수는 하드코딩하지 않고 K8s ConfigMap/Secret 또는 Terraform variables로 관리한다.
+- 주요 개발 내용 중 문서화가 필요한 부분은 [docs/CLAUDE.md](docs/CLAUDE.md)를 확인하고 docs/ 하위에 문서를 추가한다.
+- 스크립트·코드 작성 시 기능 단위마다 한글 주석을 작성한다.
+- GCP SA 키, API 키, 토큰 등 민감 정보는 코드나 설정 파일에 하드코딩하지 않는다. `.env`, `*.json` 키 파일, `terraform.tfvars` 등 시크릿을 담는 파일은 반드시 `.gitignore`에 포함되어 있는지 확인한다.
+- GitHub에 push 전, 민감 정보가 포함된 파일이 스테이징되어 있지 않은지 반드시 확인한다.

@@ -10,6 +10,7 @@
 |---------------|------|
 | [PLAN.md](PLAN.md) | Stage별 진행 계획 및 체크리스트. 현재 진행 단계 파악 시 참조 |
 | [ISSUES.md](ISSUES.md) | 진행 중 이슈, 미해결 항목, 보류 결정 사항 추적 |
+| [bootstrap.md](bootstrap.md) | GCP 초기 환경 설정 절차. `scripts/bootstrap.sh` 실행 전 반드시 확인 |
 | [architecture.md](architecture.md) | 전체 아키텍처 설명, GCP 인프라 구성, Observability 파이프라인 흐름 |
 | [finops-guide.md](finops-guide.md) | 비용 구조, 절감 전략, Grafana FinOps 대시보드 설명 |
 | [adr/](adr/) | Architecture Decision Records — 주요 기술 선택의 배경과 트레이드오프 |

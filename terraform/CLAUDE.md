@@ -27,6 +27,13 @@ terraform/
 - 민감한 값(credentials 등)은 tfvars에만 존재하며 .gitignore 처리
 - 리소스 변경 시 반드시 `terraform plan` 결과를 확인한 후 `apply`한다.
 
+## 보안 주의사항
+
+- `terraform.tfvars`, `*.tfvars` 파일은 `.gitignore`에 포함되어 있는지 항상 확인한다.
+- GCP SA(Service Account) 키 JSON 파일은 절대 이 디렉토리에 저장하지 않는다.
+- `terraform plan` 출력에 민감한 값이 포함될 수 있으므로 로그를 외부에 공유하지 않는다.
+- `outputs.tf`에 민감 값을 출력할 경우 반드시 `sensitive = true`를 명시한다.
+
 ## GKE 구성 방향
 
 - GKE Standard (Autopilot 아님)

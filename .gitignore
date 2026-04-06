@@ -222,3 +222,17 @@ __marimo__/
 # etc
 .DS_Store
 .claude/worktrees/
+
+# GCP 서비스 계정 키 (절대 커밋 금지)
+*-sa-key.json
+*-key.json
+service-account*.json
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example

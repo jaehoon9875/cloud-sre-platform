@@ -25,6 +25,13 @@ automation/
 - 환경변수로 설정값 주입 (GCP credentials, Slack webhook URL 등)
 - 민감한 값은 .env 파일 또는 GCP Secret Manager 사용 (.gitignore 처리)
 
+## 보안 주의사항
+
+- `.env` 파일, GCP SA 키 JSON, Slack webhook URL 등은 코드에 하드코딩하지 않는다.
+- 스크립트 실행 시 필요한 민감 값은 환경변수(`os.environ`) 또는 GCP Secret Manager를 통해 주입한다.
+- GitHub Actions에서 실행되는 스크립트의 시크릿은 Repository Secrets로 관리한다.
+- 로그 출력 시 민감 값(키, 토큰, URL 등)이 포함되지 않도록 주의한다.
+
 ## 주요 스크립트 설명
 
 ### billing-exporter.py
