@@ -25,7 +25,8 @@
 **현상**: `scripts/bootstrap.sh` Step 7에서 `gcloud billing budgets create` 실행 시 `INVALID_ARGUMENT` 오류 발생  
 **우회**: GCP 콘솔 > 결제 > 예산 및 알림에서 수동 생성  
 **원인 후보**: `--threshold-rule` 플래그 문법 또는 `--budget-amount` 형식 문제로 추정. CLI 버전에 따라 동작이 다를 수 있음  
-**후속 조치**: gcloud 버전 업데이트 후 재시도 또는 올바른 플래그 문법 확인 필요
+**후속 조치**: gcloud 버전 업데이트 후 재시도 또는 올바른 플래그 문법 확인 필요  
+**참고 문서**: https://docs.cloud.google.com/sdk/gcloud/reference/billing/budgets/create
 
 ---
 
