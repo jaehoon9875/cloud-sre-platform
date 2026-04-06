@@ -62,11 +62,7 @@ cloud-sre-platform/
 
 ## 참고 문서
 
-- 환경 정보 / 아키텍처: [docs/architecture.md](docs/architecture.md)
-- 비용 구조 / 절감 전략: [docs/finops-guide.md](docs/finops-guide.md)
-- 진행 계획 / 체크리스트: [docs/PLAN.md](docs/PLAN.md)
-- 진행 중 이슈 / 미해결 항목: [docs/ISSUES.md](docs/ISSUES.md)
-- 문서 구조 안내: [docs/CLAUDE.md](docs/CLAUDE.md)
+문서 목록 및 각 파일의 용도 → [docs/CLAUDE.md](docs/CLAUDE.md)
 
 ---
 
