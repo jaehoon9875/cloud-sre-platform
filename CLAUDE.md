@@ -19,40 +19,17 @@ GCP 환경에서 Terraform으로 인프라를 구성하고, GKE 위에 Observabi
 
 ```
 cloud-sre-platform/
-├── README.md                  # 외부 공개용 소개
-├── CLAUDE.md                  # 이 파일 (root AI 문맥)
-├── PLAN.md                    # Stage별 진행 계획
-│
-├── terraform/                 # GCP 인프라 IaC
-│   ├── CLAUDE.md
-│   └── modules/ environments/
-│
-├── infra/                     # Helm values + ArgoCD 정의 (GitOps)
-│   ├── CLAUDE.md
-│   ├── argocd/
-│   └── helm/
-│
-├── sample-app/                # 관측 대상 FastAPI 앱 (단일 서비스)
-│   └── CLAUDE.md
-│
-├── automation/                # Python 운영 자동화
-│   ├── CLAUDE.md
-│   ├── finops/
-│   ├── scheduler/
-│   └── incident/
-│
-├── custom-exporter/           # Go 기반 Prometheus Exporter
-│   └── CLAUDE.md
-│
-├── dashboards/                # Grafana 대시보드 JSON
-├── alerts/                    # Prometheus Alert Rule YAML
-│
-└── docs/                      # 설계 문서 (사람/AI 모두 참고)
-    ├── architecture.md
-    ├── finops-guide.md
-    ├── adr/
-    └── runbook/
+├── terraform/         # GCP 인프라 IaC (Terraform 모듈/환경)
+├── infra/             # Helm values + ArgoCD 정의 (GitOps)
+├── sample-app/        # 관측 대상 FastAPI 앱
+├── automation/        # Python 운영 자동화 (FinOps, 스케줄러, 인시던트)
+├── custom-exporter/   # Go 기반 Prometheus Exporter
+├── dashboards/        # Grafana 대시보드 JSON
+├── alerts/            # Prometheus Alert Rule YAML
+└── docs/              # 설계 문서, ADR, Runbook, 진행 계획
 ```
+
+각 디렉토리의 상세 구조는 해당 디렉토리의 CLAUDE.md 참고.
 
 ---
 
@@ -83,25 +60,40 @@ cloud-sre-platform/
 
 ---
 
-## 환경 정보
+## 참고 문서
 
-- **Cloud**: GCP (free trial, $300 크레딧, 유효기간 확인 필요)
-- **Cluster**: GKE Standard, 싱글 클러스터, dev 환경
-- **Node**: spot node pool (비용 절감), 야간 scale-down 자동화
-- **Region**: asia-northeast3 (서울)
-
----
-
-## 비용 관리 전략
-
-- GCP Budget Alert: $250 도달 시 Slack 알림
-- 야간/주말: node pool을 0으로 scale-down (scale-scheduler.py)
-- 수동: `make cluster-down` / `make cluster-up`
-- control plane 비용: $0.10/hr (월 약 $72) → 항상 발생
-- spot node 1~2개: 월 약 $20~30 → scale-down으로 절감
+- 환경 정보 / 아키텍처: [docs/architecture.md](docs/architecture.md)
+- 비용 구조 / 절감 전략: [docs/finops-guide.md](docs/finops-guide.md)
+- 진행 계획 / 체크리스트: [docs/PLAN.md](docs/PLAN.md)
+- 진행 중 이슈 / 미해결 항목: [docs/ISSUES.md](docs/ISSUES.md)
+- 문서 구조 안내: [docs/CLAUDE.md](docs/CLAUDE.md)
 
 ---
 
-## 진행 상태
+## 현재 진행 상태
 
-PLAN.md 참고
+현재 **Stage 1 시작 전** (전체 4단계 중)
+
+단계별 체크리스트 → [docs/PLAN.md](docs/PLAN.md)
+진행 중 이슈 → [docs/ISSUES.md](docs/ISSUES.md)
+
+---
+
+## Git Conventions
+
+- 커밋 메시지: `type: 설명` (예: `feat: GKE 모듈 구현`, `fix: terraform plan 오류 수정`)
+- type 목록: `feat`, `fix`, `refactor`, `docs`, `infra`, `test`, `chore`
+- 브랜치: `feature/{기능명}`, `fix/{버그명}`
+
+---
+
+## Important Rules
+
+- `infra/` YAML 파일은 들여쓰기 2칸을 유지한다.
+- Helm `values.yaml` 수정 시 기존 주석을 삭제하지 않는다.
+- ArgoCD로 관리되는 리소스는 `kubectl apply`나 `helm upgrade` CLI로 직접 수정하지 않는다.
+  직접 수정하면 Git 상태와 클러스터 상태가 달라져 ArgoCD drift가 발생한다.
+  변경은 반드시 `infra/` 파일 수정 → Git push → ArgoCD sync 경로로만 반영한다.
+- Terraform 리소스 변경 시 반드시 `terraform plan` 결과를 확인한 후 `apply`한다.
+- GCP 크레딧($300 free trial)을 고려하여 리소스 생성·변경 시 비용 영향을 먼저 검토한다.
+- 환경변수는 하드코딩하지 않고 K8s ConfigMap/Secret 또는 Terraform variables로 관리한다.

@@ -69,6 +69,20 @@ Python Automation
 
 ---
 
+## 문서
+
+| 문서 | 설명 |
+|------|------|
+| [docs/architecture.md](docs/architecture.md) | 전체 아키텍처 및 GCP 인프라 구성 |
+| [docs/finops-guide.md](docs/finops-guide.md) | FinOps 비용 구조 및 절감 전략 |
+| [docs/PLAN.md](docs/PLAN.md) | Stage별 진행 계획 및 체크리스트 |
+| [docs/ISSUES.md](docs/ISSUES.md) | 진행 중 이슈 및 미해결 항목 추적 |
+| [docs/adr/001-gke-standard.md](docs/adr/001-gke-standard.md) | ADR: GKE Standard 선택 이유 |
+| [docs/adr/002-spot-nodepool.md](docs/adr/002-spot-nodepool.md) | ADR: Spot Node Pool 사용 |
+| [docs/runbook/high-cpu.md](docs/runbook/high-cpu.md) | Runbook: High CPU 대응 |
+
+---
+
 ## 관련 프로젝트
 
 - [observability-platform](https://github.com/jaehoon9875/observability-platform): 온프레미스 k8s 기반 Observability 스택 구축 (이 프로젝트의 출발점)
