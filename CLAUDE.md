@@ -85,11 +85,7 @@ cloud-sre-platform/
 
 ## Important Rules
 
-- `infra/` YAML 파일은 들여쓰기 2칸을 유지한다.
-- Helm `values.yaml` 수정 시 기존 주석을 삭제하지 않는다.
 - ArgoCD로 관리되는 리소스는 `kubectl apply`나 `helm upgrade` CLI로 직접 수정하지 않는다.
-  직접 수정하면 Git 상태와 클러스터 상태가 달라져 ArgoCD drift가 발생한다.
   변경은 반드시 `infra/` 파일 수정 → Git push → ArgoCD sync 경로로만 반영한다.
-- Terraform 리소스 변경 시 반드시 `terraform plan` 결과를 확인한 후 `apply`한다.
 - GCP 크레딧($300 free trial)을 고려하여 리소스 생성·변경 시 비용 영향을 먼저 검토한다.
 - 환경변수는 하드코딩하지 않고 K8s ConfigMap/Secret 또는 Terraform variables로 관리한다.

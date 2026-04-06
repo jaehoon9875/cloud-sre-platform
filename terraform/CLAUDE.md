@@ -25,6 +25,7 @@ terraform/
 - 모듈 단위로 분리하여 재사용 가능하게 구성
 - Terraform state는 GCS backend에 저장
 - 민감한 값(credentials 등)은 tfvars에만 존재하며 .gitignore 처리
+- 리소스 변경 시 반드시 `terraform plan` 결과를 확인한 후 `apply`한다.
 
 ## GKE 구성 방향
 
