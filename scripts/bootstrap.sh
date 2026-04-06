@@ -17,12 +17,12 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 # 설정값 (필요 시 수정)
 # -----------------------------------------------------------------------------
-PROJECT_ID="${PROJECT_ID:-cloud-sre-platform-dev}"
-REGION="${REGION:-asia-northeast3}"
-TFSTATE_BUCKET="${TFSTATE_BUCKET:-${PROJECT_ID}-tfstate}"
-SA_NAME="terraform-sa"
-SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
-KEY_PATH="${HOME}/.config/gcloud/terraform-sa-key.json"
+PROJECT_ID="${PROJECT_ID:-cloud-sre-platform-dev}"   # GCP 프로젝트 ID (전역 고유값)
+REGION="${REGION:-asia-northeast3}"               # 서울 리전
+TFSTATE_BUCKET="${TFSTATE_BUCKET:-${PROJECT_ID}-tfstate}"  # Terraform 상태 파일 저장 버킷명
+SA_NAME="terraform-sa"                            # 서비스 계정 이름 (GCP 내 식별자)
+SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"  # 서비스 계정 전체 이메일 (IAM 바인딩 시 사용)
+KEY_PATH="${HOME}/.config/gcloud/terraform-sa-key.json"      # SA 키 저장 경로 (git 외부에 보관)
 
 # Billing Account ID는 환경변수로 반드시 전달 필요
 BILLING_ACCOUNT_ID="${BILLING_ACCOUNT_ID:?'오류: BILLING_ACCOUNT_ID 환경변수를 설정해주세요. (gcloud billing accounts list 로 확인)'}"
@@ -70,14 +70,14 @@ success "Billing 계정 연결 완료"
 info "Step 3/7: GCP API 활성화 중... (1~2분 소요)"
 
 APIS=(
-  container.googleapis.com
-  artifactregistry.googleapis.com
-  bigquery.googleapis.com
-  billingbudgets.googleapis.com
-  cloudbilling.googleapis.com
-  storage.googleapis.com
-  iam.googleapis.com
-  cloudresourcemanager.googleapis.com
+  container.googleapis.com              # GKE: Kubernetes 클러스터 생성·관리
+  artifactregistry.googleapis.com       # Artifact Registry: Docker 이미지 저장소
+  bigquery.googleapis.com              # BigQuery: 비용 데이터 분석용 데이터 웨어하우스
+  billingbudgets.googleapis.com        # Billing Budgets: 예산 알림 생성 API
+  cloudbilling.googleapis.com          # Cloud Billing: 결제 계정 조회·연결 API
+  storage.googleapis.com               # Cloud Storage(GCS): 파일 저장소 (tfstate 버킷 포함)
+  iam.googleapis.com                   # IAM: 서비스 계정·권한 관리
+  cloudresourcemanager.googleapis.com  # Resource Manager: 프로젝트 메타데이터 조회·수정
 )
 
 gcloud services enable "${APIS[@]}" --project="$PROJECT_ID" --quiet
@@ -102,12 +102,12 @@ fi
 info "Step 4/7: IAM 역할 바인딩 중..."
 
 ROLES=(
-  roles/editor
-  roles/iam.securityAdmin
-  roles/container.admin
-  roles/artifactregistry.admin
-  roles/storage.admin
-  roles/bigquery.admin
+  roles/editor                  # 대부분의 GCP 리소스 생성·수정·삭제 (IAM 제외)
+  roles/iam.securityAdmin       # IAM 정책 조회·수정 (서비스 계정에 역할 부여 시 필요)
+  roles/container.admin         # GKE 클러스터 생성·관리·삭제
+  roles/artifactregistry.admin  # Artifact Registry 저장소 생성·이미지 푸시·삭제
+  roles/storage.admin           # GCS 버킷 생성·객체 읽기·쓰기 (tfstate 버킷 관리)
+  roles/bigquery.admin          # BigQuery 데이터셋·테이블 생성·쿼리 (FinOps 비용 분석)
 )
 
 for ROLE in "${ROLES[@]}"; do
@@ -157,12 +157,14 @@ info "Step 6/7: Terraform state 버킷 생성 중..."
 if gcloud storage buckets describe "gs://${TFSTATE_BUCKET}" &>/dev/null; then
   already_exists "버킷 'gs://${TFSTATE_BUCKET}'"
 else
+  # --uniform-bucket-level-access: 객체별 ACL 대신 버킷 IAM 정책으로 권한을 통일
   gcloud storage buckets create "gs://${TFSTATE_BUCKET}" \
     --project="$PROJECT_ID" \
     --location="$REGION" \
     --uniform-bucket-level-access \
     --quiet
 
+  # --versioning: tfstate가 손상되거나 잘못 덮어쓰여도 이전 버전으로 복구 가능
   gcloud storage buckets update "gs://${TFSTATE_BUCKET}" \
     --versioning \
     --quiet
@@ -175,6 +177,8 @@ fi
 # -----------------------------------------------------------------------------
 info "Step 7/7: Budget Alert 설정 중..."
 
+# --budget-amount: free trial $300 중 여유분 고려한 임계값
+# --threshold-rule: 80% ($200) 도달 시, 100% ($250) 도달 시 각각 이메일 알림 발송
 gcloud billing budgets create \
   --billing-account="$BILLING_ACCOUNT_ID" \
   --display-name="${PROJECT_ID}-budget-alert" \
