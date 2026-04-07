@@ -19,17 +19,21 @@
 | # | 심각도 | 단계 | 제목 | 발생일 | 상태 |
 |---|--------|------|------|--------|------|
 | 1 | 🟢 낮음 | Stage 1 | `gcloud billing budgets create` CLI 명령어 INVALID_ARGUMENT 오류 | 2026-04-06 | 미해결 (콘솔에서 수동 설정으로 우회) |
-| 2 | 🟡 중간 | Stage 1 | GKE node scale-down이 0으로 되지 않음 | 2026-04-07 | 미해결 |
+| 2 | 🟡 중간 | Stage 1 | GKE node scale-down이 0으로 되지 않음 | 2026-04-07 | 보류 (원인 파악 완료, 동작 미검증) |
 
 ### #2 상세
 
 **현상**: `make cluster-down` 및 GitHub Actions workflow 실행 시 노드 수가 0이 되지 않고 1을 유지함  
 **시도한 방법**:
 - `terraform.tfvars` `min_node_count` 1 → 0 변경 후 `terraform apply`
-- workflow에 `gcloud container clusters update --min-nodes 0` 추가 후 `resize --num-nodes 0` 실행  
+- workflow에 `gcloud container clusters update --min-nodes 0` 추가 후 `resize --num-nodes 0` 실행
 
-**원인 후보**: 리전 클러스터(3 zone)에서 `resize` 명령이 zone별로 동작하는 방식 문제, 또는 오토스케일러가 min=0 반영 전에 복구하는 타이밍 문제로 추정  
-**후속 조치**: `gcloud container node-pools update` 방식 또는 각 zone별 직접 제어 방법 조사 필요
+**원인 파악**:
+1. **오토스케일러 순서 문제**: 오토스케일러가 활성화된 상태에서 `resize --num-nodes 0`을 실행하면 오토스케일러가 즉시 개입하여 노드를 복구함 → `--no-enable-autoscaling` 먼저 실행 후 resize하도록 `Makefile` 및 workflow 수정 완료 (2026-04-07)
+2. **GKE 시스템 Pod 구조적 한계**: 오토스케일러는 노드에 DaemonSet 등 시스템 Pod가 존재하면 자동으로 해당 노드를 제거하지 않음. `kubectl describe node` 기준 17개 시스템 Pod(`kube-dns`, `fluentbit-gke`, `gke-metrics-agent`, `konnectivity-agent` 등)가 상시 가동 중이므로 **오토스케일러에 의한 자동 scale-to-0은 구조적으로 불가**
+
+**현재 상태**: 수동 `make cluster-down`(오토스케일러 비활성화 후 resize) 방식은 이론상 동작 가능하나 실제 테스트 미완료  
+**후속 조치**: 워크로드 배포 후 `make cluster-down` / `make cluster-up` 동작 검증 예정. 검증 완료 시 이슈 상태 재업데이트
 
 ---
 
