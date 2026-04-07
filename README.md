@@ -77,6 +77,7 @@ Python Automation
 |------|------|------|
 | 1 | [docs/bootstrap.md](docs/bootstrap.md) | 로컬 도구 설치, GCP 프로젝트 초기화, Terraform SA 생성 |
 | 2 | [terraform/](terraform/) | Terraform으로 VPC / GKE / Artifact Registry 프로비저닝 |
+| 2-1 | [docs/github-actions-gcp-auth.md](docs/github-actions-gcp-auth.md) | GitHub Actions GCP 인증 설정 (Workload Identity Federation) |
 | 3 | (Stage 2 진행 후 추가 예정) | ArgoCD + Observability 스택 배포 |
 | 4 | (Stage 3 진행 후 추가 예정) | FinOps 파이프라인 + Python 자동화 |
 | 5 | (Stage 4 진행 후 추가 예정) | Go Custom Exporter 배포 |

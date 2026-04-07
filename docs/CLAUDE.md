@@ -13,6 +13,7 @@
 | [bootstrap.md](bootstrap.md) | GCP 초기 환경 설정 절차. `scripts/bootstrap.sh` 실행 전 반드시 확인 |
 | [architecture.md](architecture.md) | 전체 아키텍처 설명, GCP 인프라 구성, Observability 파이프라인 흐름 |
 | [finops-guide.md](finops-guide.md) | 비용 구조, 절감 전략, Grafana FinOps 대시보드 설명 |
+| [github-actions-gcp-auth.md](github-actions-gcp-auth.md) | GitHub Actions에서 GCP 인증을 위한 Workload Identity Federation 설정 절차 |
 | [adr/](adr/) | Architecture Decision Records — 주요 기술 선택의 배경과 트레이드오프 |
 | [runbook/](runbook/) | 장애 유형별 대응 절차 |
 
