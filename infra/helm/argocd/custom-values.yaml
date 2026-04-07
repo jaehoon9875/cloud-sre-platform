@@ -1,0 +1,69 @@
+# argo/argo-cd 커스텀 설정
+# chart version: 9.4.17 / app version: v3.3.6
+# release name: argocd
+
+# GKE 환경 설정 — LoadBalancer 없이 port-forward로 접근 (비용 절감)
+# UI 접근: kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+configs:
+  params:
+    # TLS는 ingress/LB에서 처리 — ArgoCD 서버는 HTTP로만 서비스
+    server.insecure: "true"
+
+server:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# GKE spot 노드: HA Redis 불필요
+redis-ha:
+  enabled: false
+
+controller:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+repoServer:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 1Gi
+
+applicationSet:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+notifications:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

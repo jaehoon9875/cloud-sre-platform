@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  # kube-prometheus-stack CRD가 크기 때문에 ServerSideApply 필수
+  # 다중 소스: Helm chart(registry) + values 파일(git repo) 분리
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 82.14.0
+      helm:
+        releaseName: my-kube-prometheus-stack
+        valueFiles:
+          - $values/infra/helm/kube-prometheus-stack/custom-values.yaml
+    - repoURL: https://github.com/jaehoon9875/cloud-sre-platform
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PrunePropagationPolicy=background

@@ -1,0 +1,136 @@
+# grafana/alloy 커스텀 설정
+# chart version: 1.6.2 / app version: v1.14.0
+# 역할: 클러스터 전체 로그 수집 → Loki로 전송 (DaemonSet)
+# GKE 변경: syslog는 GKE 노드에서 접근 불가 → Pod 로그 + K8s 이벤트만 수집
+
+alloy:
+  mounts:
+    varlog: true  # 노드 /var/log 마운트 (Pod 로그 경로 접근용)
+
+  configMap:
+    content: |
+      // loki endpoint 정의
+      loki.write "default_loki_endpoint" {
+        endpoint {
+          url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+          tenant_id = "fake"
+        }
+      }
+
+      // Pod 로그 수집
+      discovery.kubernetes "pod" {
+        role = "pod"
+        selectors {
+          role = "pod"
+          field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
+        }
+      }
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pod.targets
+
+        // --- 스트림 라벨: 낮은 카디널리티만 허용 ---
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          action = "replace"
+          target_label = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          action = "replace"
+          target_label = "app"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "job"
+          separator = "/"
+          replacement = "$1"
+        }
+
+        // --- 파일 경로 (내부용, 라벨 아님) ---
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "__path__"
+          separator = "/"
+          replacement = "/var/log/pods/*$1/*.log"
+        }
+
+        // --- pod명은 라벨로 수집 후 structured_metadata로 이동 ---
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          action = "replace"
+          target_label = "pod"
+        }
+      }
+      loki.source.kubernetes "pod_logs" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.process.pod_logs.receiver]
+      }
+      loki.process "pod_logs" {
+        stage.static_labels {
+          values = {
+            cluster = "gke-sre-platform",
+          }
+        }
+
+        // pod명: 고카디널리티 → structured_metadata로 이동
+        stage.structured_metadata {
+          values = {
+            pod = "",
+          }
+        }
+        stage.label_drop {
+          values = ["pod"]
+        }
+
+        // JSON 로그에서 trace_id/span_id 추출 (OTel 연동)
+        // JSON 파싱 실패 시(텍스트 로그) 해당 스테이지는 무시
+        stage.json {
+          expressions = {
+            trace_id = "trace_id",
+            span_id  = "span_id",
+          }
+        }
+        stage.structured_metadata {
+          values = {
+            trace_id = "",
+            span_id  = "",
+          }
+        }
+
+        forward_to = [loki.write.default_loki_endpoint.receiver]
+      }
+
+      // 쿠버네티스 이벤트 로그
+      loki.source.kubernetes_events "cluster_events" {
+        job_name   = "integrations/kubernetes/eventhandler"
+        log_format = "logfmt"
+        forward_to = [
+          loki.process.cluster_events.receiver,
+        ]
+      }
+      loki.process "cluster_events" {
+        forward_to = [loki.write.default_loki_endpoint.receiver]
+        stage.static_labels {
+          values = {
+            cluster = "gke-sre-platform",
+          }
+        }
+        stage.labels {
+          values = {
+            kubernetes_cluster_events = "job",
+          }
+        }
+      }
+
+configReloader:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 50Mi

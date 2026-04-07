@@ -1,0 +1,72 @@
+# prometheus-community/kube-prometheus-stack 커스텀 설정
+# chart version: 82.14.0 / app version: v0.89.0
+# release name: my-kube-prometheus-stack
+
+prometheus:
+  prometheusSpec:
+    # Exemplar 저장소 활성화 — 메트릭에 붙은 trace_id를 Prometheus가 보존
+    enableFeatures:
+      - exemplar-storage
+
+grafana:
+  # admin 시크릿은 kubectl로 수동 생성 (Git에 올리지 않음)
+  # 생성 방법: kubectl create secret generic grafana-admin-secret \
+  #   --from-literal=admin-user=admin \
+  #   --from-literal=admin-password=<PASSWORD> \
+  #   -n monitoring
+  admin:
+    existingSecret: grafana-admin-secret
+    userKey: admin-user
+    passwordKey: admin-password
+  # GKE fsGroup 처리 방식 (observability-platform에서 검증된 설정)
+  securityContext:
+    fsGroup: 472
+  initChownData:
+    enabled: false
+  persistence:
+    enabled: true
+    size: 2Gi
+  sidecar:
+    datasources:
+      # Prometheus Exemplar → Tempo 연결
+      exemplarTraceIdDestinations:
+        datasourceUid: tempo
+        traceIdLabelName: trace_id
+  deleteDatasources:
+    - name: Tempo
+      orgId: 1
+    - name: Loki
+      orgId: 1
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.monitoring:3100
+      access: proxy
+      jsonData:
+        httpHeaderName1: "X-Scope-OrgID"
+        # Loki 라벨 trace_id → Tempo 링크 생성 (Log-Trace Correlation)
+        derivedFields:
+          - name: TraceID
+            matcherType: regex
+            matcherRegex: '"trace_id":"([a-f0-9]{32})"'
+            url: "$${__value.raw}"
+            datasourceUid: tempo
+            urlDisplayLabel: "View trace in Tempo"
+      secureJsonData:
+        httpHeaderValue1: "fake"
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo.monitoring:3200
+      access: proxy
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: loki
+          filterByTraceID: true
+          filterBySpanID: false
+          tags:
+            - key: service.name
+              value: app
+        lokiSearch:
+          datasourceUid: loki

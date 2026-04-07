@@ -1,0 +1,50 @@
+# grafana/loki 커스텀 설정
+# chart version: 6.55.0 / app version: 3.6.7
+# 배포 모드: SingleBinary (단일 노드 GKE spot 환경)
+
+deploymentMode: SingleBinary
+
+loki:
+  commonConfig:
+    replication_factor: 1
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  limits_config:
+    allow_structured_metadata: true
+    volume_enabled: true
+  pattern_ingester:
+    enabled: true
+  ruler:
+    enable_api: true
+
+# 내장 MinIO를 오브젝트 스토리지로 사용 (GCS 전환은 Stage 3 FinOps 시 검토)
+minio:
+  enabled: true
+
+# SingleBinary 모드: 단일 파드가 모든 역할 수행
+singleBinary:
+  replicas: 1
+
+# SingleBinary 모드에서 개별 컴포넌트 비활성화
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# spot 노드 환경 — memcached 리소스 축소
+chunksCache:
+  allocatedCPU: 100m
+  allocatedMemory: 512
+
+resultsCache:
+  allocatedCPU: 100m
+  allocatedMemory: 256

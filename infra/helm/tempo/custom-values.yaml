@@ -1,0 +1,4 @@
+# grafana/tempo 커스텀 설정
+# chart version: 1.24.4 / app version: 2.9.0
+# 기본값 사용 (OTLP 수신 포트 4317/4318 활성화)
+# sample-app에서 OTel SDK → tempo.monitoring:4317로 트레이스 전송
