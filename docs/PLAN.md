@@ -6,7 +6,7 @@
 |-------|------|------|
 | Stage 1 | GCP 인프라 프로비저닝 (Terraform) | ✅ 완료 |
 | Stage 2 | Observability Stack 이전 (ArgoCD + Helm) | ✅ 완료 |
-| Stage 3 | FinOps + Python 자동화 | 🔲 진행 전 |
+| Stage 3 | FinOps + Python 자동화 | 🔄 진행 예정 |
 | Stage 4 | Go Custom Exporter | 🔲 진행 전 |
 
 ---
@@ -64,10 +64,10 @@
 - [x] GitHub Actions CI (build → Artifact Registry push)
 - [x] ArgoCD로 GKE 배포 연동
 
-**검증**
+**✅ 검증**
 - [x] Grafana에서 메트릭 확인
 - [x] 분산 트레이싱 (Trace → Log 연동) 확인
-- [ ] k6 부하 테스트 실행 확인
+- [x] k6 부하 테스트 실행 확인
 
 ---
 
