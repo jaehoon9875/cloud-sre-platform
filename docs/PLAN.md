@@ -44,17 +44,17 @@
 
 ### 체크리스트
 
-**GitOps 환경**
+**✅ GitOps 환경**
 - [x] ArgoCD 설치 및 초기 설정
 - [x] GitHub repo 연결 (infra/ 디렉토리 감지)
 
-**Observability 스택 배포**
+**✅ Observability 스택 배포**
 - [x] kube-prometheus-stack (Prometheus + Grafana)
 - [x] Loki + Alloy
 - [x] Tempo
 - [x] ArgoCD Application 정의 작성
 
-**Sample App**
+**✅ Sample App**
 - [x] FastAPI sample-app 개발 (Python)
   - [x] `/health`, `/orders` 엔드포인트
   - [x] Prometheus 메트릭 노출 (`/metrics`)
