@@ -32,7 +32,7 @@
 
 **FinOps 기반 설정**
 - [x] GCP Budget Alert 설정 ($250 임계치)
-- [ ] BigQuery billing export 활성화 (GCP 콘솔에서 수동 설정 — [finops-guide.md](finops-guide.md) 참고)
+- [x] BigQuery billing export 활성화 (GCP 콘솔에서 수동 설정 — [finops-guide.md](finops-guide.md) 참고)
 - [x] `make cluster-down` / `make cluster-up` Makefile 작성
 - [x] GitHub Actions: 야간 자동 scale-down workflow
 
@@ -117,4 +117,9 @@
 
 ## 이슈 및 메모
 
-> 진행하면서 발생한 이슈, 결정 사항, 참고할 내용을 여기에 기록
+진행 중 발생한 이슈 및 미해결 항목은 **[ISSUES.md](ISSUES.md)** 에서 관리합니다.
+
+| # | 단계 | 요약 | 상태 |
+|---|------|------|------|
+| [#1](ISSUES.md#1-상세) | Stage 1 | `gcloud billing budgets create` CLI INVALID_ARGUMENT 오류 | 🟢 우회 완료 |
+| [#2](ISSUES.md#2-상세) | Stage 1 | GKE node scale-down이 0으로 되지 않음 | 🟡 검증 대기 중 |

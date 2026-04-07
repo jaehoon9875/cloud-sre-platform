@@ -68,7 +68,7 @@ cloud-sre-platform/
 
 ## 현재 진행 상태
 
-현재 **Stage 1 진행 중** (전체 4단계 중) — GCP 초기 설정 완료, Terraform 모듈 작성 단계
+현재 **Stage 2 진행 예정** (전체 4단계 중) — Stage 1 완료, Observability Stack 이전 단계
 
 단계별 체크리스트 → [docs/PLAN.md](docs/PLAN.md)
 진행 중 이슈 → [docs/ISSUES.md](docs/ISSUES.md)
