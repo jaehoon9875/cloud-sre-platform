@@ -1,10 +1,16 @@
 name: 야간 GKE 클러스터 Scale-Down
 
 on:
-  # 매일 오후 11시 (KST) = UTC 14:00 에 자동 실행
-  schedule:
-    - cron: '0 14 * * *'
-  # 수동 실행 가능 (GitHub Actions UI에서 트리거)
+  # [비활성화] 매일 오후 11시 (KST) = UTC 14:00 자동 실행
+  # 비활성화 사유: GKE 시스템 Pod(DaemonSet) 구조상 오토스케일러가 자동으로 노드를
+  # scale-to-0 하지 않으며, 실제 워크로드가 없는 현재 시점에서는 의미 없는 실행.
+  # 워크로드 배포 후 make cluster-down 동작 검증이 완료되면 주석 해제하여 재활성화.
+  # (참고: docs/ISSUES.md #2)
+  #
+  # schedule:
+  #   - cron: '0 14 * * *'
+
+  # 수동 실행은 유지 — 동작 검증 시 GitHub Actions UI에서 트리거 가능
   workflow_dispatch:
     inputs:
       num_nodes:
