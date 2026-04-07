@@ -1,6 +1,5 @@
 import asyncio
 import random
-import time
 
 import structlog
 from fastapi import FastAPI, HTTPException
@@ -12,6 +11,17 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_fastapi_instrumentator import Instrumentator
 
+
+def add_otel_trace_context(logger, method, event_dict):
+    """현재 OTel Span의 trace_id/span_id를 로그에 주입 — Loki structured_metadata로 이동됨"""
+    span = trace.get_current_span()
+    ctx = span.get_span_context()
+    if ctx.is_valid:
+        event_dict["trace_id"] = format(ctx.trace_id, "032x")
+        event_dict["span_id"] = format(ctx.span_id, "016x")
+    return event_dict
+
+
 # ──────────────────────────────────────────────
 # 구조화 로깅 설정 (JSON 형식 → Alloy → Loki)
 # ──────────────────────────────────────────────
@@ -19,6 +29,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        add_otel_trace_context,  # trace_id/span_id 주입
         structlog.processors.JSONRenderer(),
     ]
 )
