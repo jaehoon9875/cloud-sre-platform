@@ -4,8 +4,8 @@
 
 | Stage | 내용 | 상태 |
 |-------|------|------|
-| Stage 1 | GCP 인프라 프로비저닝 (Terraform) | 🔄 진행 중 |
-| Stage 2 | Observability Stack 이전 (ArgoCD + Helm) | 🔲 진행 전 |
+| Stage 1 | GCP 인프라 프로비저닝 (Terraform) | ✅ 완료 |
+| Stage 2 | Observability Stack 이전 (ArgoCD + Helm) | ✅ 완료 |
 | Stage 3 | FinOps + Python 자동화 | 🔲 진행 전 |
 | Stage 4 | Go Custom Exporter | 🔲 진행 전 |
 
@@ -45,28 +45,28 @@
 ### 체크리스트
 
 **GitOps 환경**
-- [ ] ArgoCD 설치 및 초기 설정
-- [ ] GitHub repo 연결 (infra/ 디렉토리 감지)
+- [x] ArgoCD 설치 및 초기 설정
+- [x] GitHub repo 연결 (infra/ 디렉토리 감지)
 
 **Observability 스택 배포**
-- [ ] kube-prometheus-stack (Prometheus + Grafana)
-- [ ] Loki + Alloy
-- [ ] Tempo
-- [ ] ArgoCD Application 정의 작성
+- [x] kube-prometheus-stack (Prometheus + Grafana)
+- [x] Loki + Alloy
+- [x] Tempo
+- [x] ArgoCD Application 정의 작성
 
 **Sample App**
-- [ ] FastAPI sample-app 개발 (Python)
-  - [ ] `/health`, `/orders` 엔드포인트
-  - [ ] Prometheus 메트릭 노출 (`/metrics`)
-  - [ ] OpenTelemetry 트레이싱 연동
-  - [ ] 의도적 에러/지연 엔드포인트 (장애 시뮬레이션)
-- [ ] Dockerfile 작성
-- [ ] GitHub Actions CI (build → Artifact Registry push)
-- [ ] ArgoCD로 GKE 배포 연동
+- [x] FastAPI sample-app 개발 (Python)
+  - [x] `/health`, `/orders` 엔드포인트
+  - [x] Prometheus 메트릭 노출 (`/metrics`)
+  - [x] OpenTelemetry 트레이싱 연동
+  - [x] 의도적 에러/지연 엔드포인트 (장애 시뮬레이션)
+- [x] Dockerfile 작성
+- [x] GitHub Actions CI (build → Artifact Registry push)
+- [x] ArgoCD로 GKE 배포 연동
 
 **검증**
-- [ ] Grafana에서 메트릭 확인
-- [ ] 분산 트레이싱 (Trace → Log 연동) 확인
+- [x] Grafana에서 메트릭 확인
+- [x] 분산 트레이싱 (Trace → Log 연동) 확인
 - [ ] k6 부하 테스트 실행 확인
 
 ---
