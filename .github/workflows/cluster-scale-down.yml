@@ -50,15 +50,15 @@ jobs:
       - name: 노드 수 0으로 축소 (야간 비용 절감)
         run: |
           NUM_NODES=${{ github.event.inputs.num_nodes || '0' }}
-          echo "오토스케일러 min을 0으로 설정..."
+          # 1단계: 오토스케일러 비활성화 (활성 상태에서 resize 시 즉시 재복구하는 문제 방지)
+          echo "오토스케일러 비활성화..."
           gcloud container clusters update ${{ env.CLUSTER }} \
             --node-pool ${{ env.NODE_POOL }} \
-            --enable-autoscaling \
-            --min-nodes 0 \
-            --max-nodes 3 \
+            --no-enable-autoscaling \
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
             --quiet
+          # 2단계: 노드 수 조정 (regional 클러스터이므로 zone당 노드 수)
           echo "노드 수를 ${NUM_NODES}로 조정합니다..."
           gcloud container clusters resize ${{ env.CLUSTER }} \
             --node-pool ${{ env.NODE_POOL }} \

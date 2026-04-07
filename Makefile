@@ -9,14 +9,14 @@ NODE_POOL   := sre-platform-cluster-spot-pool
 ## 클러스터 노드 수를 0으로 축소 (야간/주말 비용 절감용)
 ## control plane 비용($0.10/hr)은 유지되나 노드 VM 비용은 0원
 cluster-down:
+	# 1단계: 오토스케일러 비활성화 (활성 상태에서 resize 시 즉시 재복구하는 문제 방지)
 	gcloud container clusters update $(CLUSTER) \
 		--node-pool $(NODE_POOL) \
-		--enable-autoscaling \
-		--min-nodes 0 \
-		--max-nodes 3 \
+		--no-enable-autoscaling \
 		--region $(REGION) \
 		--project $(PROJECT_ID) \
 		--quiet
+	# 2단계: 노드 수 0으로 축소 (regional 클러스터이므로 zone당 0개 = 총 0개)
 	gcloud container clusters resize $(CLUSTER) \
 		--node-pool $(NODE_POOL) \
 		--num-nodes 0 \
@@ -24,19 +24,21 @@ cluster-down:
 		--project $(PROJECT_ID) \
 		--quiet
 
-## 클러스터 노드를 1대로 복구 (작업 재개 시)
+## 클러스터 노드를 복구 후 오토스케일러 재활성화 (작업 재개 시)
 cluster-up:
+	# 1단계: 노드 수 복구 (regional 클러스터이므로 zone당 1개 = 총 3개)
+	gcloud container clusters resize $(CLUSTER) \
+		--node-pool $(NODE_POOL) \
+		--num-nodes 1 \
+		--region $(REGION) \
+		--project $(PROJECT_ID) \
+		--quiet
+	# 2단계: 오토스케일러 재활성화
 	gcloud container clusters update $(CLUSTER) \
 		--node-pool $(NODE_POOL) \
 		--enable-autoscaling \
 		--min-nodes 0 \
 		--max-nodes 3 \
-		--region $(REGION) \
-		--project $(PROJECT_ID) \
-		--quiet
-	gcloud container clusters resize $(CLUSTER) \
-		--node-pool $(NODE_POOL) \
-		--num-nodes 1 \
 		--region $(REGION) \
 		--project $(PROJECT_ID) \
 		--quiet
