@@ -42,9 +42,9 @@ backend:
 
 # spot 노드 환경 — memcached 리소스 축소
 chunksCache:
-  allocatedCPU: 100m
+  allocatedCPU: 50m
   allocatedMemory: 512
 
 resultsCache:
-  allocatedCPU: 100m
+  allocatedCPU: 50m
   allocatedMemory: 256
