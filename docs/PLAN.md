@@ -17,24 +17,24 @@
 
 ### 체크리스트
 
-**GCP 초기 설정**
+**✅ GCP 초기 설정**
 - [x] GCP 프로젝트 생성
 - [x] 필요한 API 활성화 (GKE, Artifact Registry, BigQuery, Billing)
 - [x] Terraform 서비스 계정 생성 및 권한 설정
 - [x] Terraform state 저장용 GCS bucket 생성
 
-**Terraform 구성**
-- [ ] `modules/vpc`: VPC, Subnet, Firewall 구성
-- [ ] `modules/gke`: GKE Standard Cluster + spot node pool
-- [ ] `modules/registry`: Artifact Registry 구성
-- [ ] `environments/dev`: dev 환경 tfvars 작성
-- [ ] Terraform plan / apply 검증
+**✅ Terraform 구성**
+- [x] `modules/vpc`: VPC, Subnet, Firewall 구성
+- [x] `modules/gke`: GKE Standard Cluster + spot node pool
+- [x] `modules/registry`: Artifact Registry 구성
+- [x] `environments/dev`: dev 환경 tfvars 작성
+- [x] Terraform plan / apply 검증
 
 **FinOps 기반 설정**
 - [x] GCP Budget Alert 설정 ($250 임계치)
-- [ ] BigQuery billing export 활성화
-- [ ] `make cluster-down` / `make cluster-up` Makefile 작성
-- [ ] GitHub Actions: 야간 자동 scale-down workflow
+- [ ] BigQuery billing export 활성화 (GCP 콘솔에서 수동 설정 — [finops-guide.md](finops-guide.md) 참고)
+- [x] `make cluster-down` / `make cluster-up` Makefile 작성
+- [x] GitHub Actions: 야간 자동 scale-down workflow
 
 ---
 

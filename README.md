@@ -69,6 +69,20 @@ Python Automation
 
 ---
 
+## 구축 순서
+
+처음부터 환경을 구축하는 경우 아래 순서를 따른다.
+
+| 단계 | 문서 | 내용 |
+|------|------|------|
+| 1 | [docs/bootstrap.md](docs/bootstrap.md) | 로컬 도구 설치, GCP 프로젝트 초기화, Terraform SA 생성 |
+| 2 | [terraform/](terraform/) | Terraform으로 VPC / GKE / Artifact Registry 프로비저닝 |
+| 3 | (Stage 2 진행 후 추가 예정) | ArgoCD + Observability 스택 배포 |
+| 4 | (Stage 3 진행 후 추가 예정) | FinOps 파이프라인 + Python 자동화 |
+| 5 | (Stage 4 진행 후 추가 예정) | Go Custom Exporter 배포 |
+
+---
+
 ## 문서
 
 | 문서 | 설명 |

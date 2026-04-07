@@ -29,7 +29,24 @@ GitHub Actions scheduled workflow
 - $250 도달 시 Slack 알림
 - $300 도달 시 이메일 알림 (GCP 기본)
 
-### 3. FinOps 모니터링
+### 3. BigQuery Billing Export 활성화
+
+GCP 결제 데이터를 BigQuery로 내보내는 설정. **GCP 콘솔에서만 설정 가능** (Terraform 미지원).  
+이 데이터를 기반으로 Stage 3에서 Python FinOps 파이프라인을 구성한다.
+
+**설정 절차:**
+
+1. GCP 콘솔 → 결제(Billing) → 결제 내보내기(Billing export)
+2. **BigQuery 내보내기** 탭 선택
+3. **수정** 클릭 후 아래 값 입력:
+   - 프로젝트: `cloud-sre-platform-dev`
+   - 데이터세트 이름: `billing_export` (없으면 새로 생성)
+4. **저장** 클릭
+
+> 데이터가 BigQuery에 쌓이기까지 최대 24시간 소요될 수 있다.  
+> 내보낸 데이터는 BigQuery 콘솔에서 `billing_export.gcp_billing_export_v1_*` 테이블로 확인 가능.
+
+### 4. FinOps 모니터링
 
 <!-- 파이프라인 구성 완료 후 상세 내용 추가 -->
 

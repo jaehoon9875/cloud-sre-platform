@@ -16,8 +16,20 @@ tfenv install 1.7.5
 tfenv use 1.7.5
 terraform version
 
-# gcloud CLI
+# gcloud CLI (google-cloud-sdk)
 brew install --cask google-cloud-sdk
+
+# kubectl — 쿠버네티스 클러스터 제어 CLI
+brew install kubectl
+
+# gke-gcloud-auth-plugin — kubectl이 GKE에 인증하기 위한 플러그인
+# brew cask로 설치한 경우 bin 경로를 PATH에 추가해야 함
+echo 'export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# 설치 확인
+gke-gcloud-auth-plugin --version
+kubectl version --client
 ```
 
 ### 2. gcloud 인증
@@ -106,3 +118,21 @@ BILLING_ACCOUNT_ID=XXXXXX-XXXXXX-XXXXXX \
 
 Bootstrap 완료 후 `terraform/` 디렉토리에서 Terraform 코드 작성을 시작한다.  
 진행 순서는 [PLAN.md](PLAN.md) Stage 1 "Terraform 구성" 섹션 참고.
+
+---
+
+## Terraform apply 후 — GKE 클러스터 로컬 연결
+
+`terraform apply`로 GKE 클러스터가 생성된 뒤, 아래 명령어로 로컬 kubectl을 클러스터에 연결한다.
+
+```bash
+# kubeconfig 생성 (kubectl이 클러스터를 인식하게 함)
+gcloud container clusters get-credentials sre-platform-cluster \
+  --region asia-northeast3 \
+  --project cloud-sre-platform-dev
+
+# 노드 연결 확인
+kubectl get nodes
+```
+
+노드가 `Ready` 상태로 출력되면 정상 연결된 것이다.

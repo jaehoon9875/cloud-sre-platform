@@ -1,0 +1,61 @@
+name: 야간 GKE 클러스터 Scale-Down
+
+on:
+  # 매일 오후 11시 (KST) = UTC 14:00 에 자동 실행
+  schedule:
+    - cron: '0 14 * * *'
+  # 수동 실행 가능 (GitHub Actions UI에서 트리거)
+  workflow_dispatch:
+    inputs:
+      num_nodes:
+        description: '노드 수 (0: scale-down, 1: scale-up)'
+        required: true
+        default: '0'
+
+env:
+  PROJECT_ID: cloud-sre-platform-dev
+  REGION: asia-northeast3
+  CLUSTER: sre-platform-cluster
+  NODE_POOL: sre-platform-cluster-spot-pool
+
+jobs:
+  scale-down:
+    name: 노드 수 축소
+    runs-on: ubuntu-latest
+
+    # GCP 인증을 위한 Workload Identity Federation 권한
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: GCP 인증 (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: gcloud CLI 설정
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: 현재 노드 수 확인
+        run: |
+          echo "=== 현재 노드 상태 ==="
+          gcloud container node-pools describe ${{ env.NODE_POOL }} \
+            --cluster ${{ env.CLUSTER }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --format="value(autoscaling.minNodeCount, autoscaling.maxNodeCount)"
+
+      - name: 노드 수 0으로 축소 (야간 비용 절감)
+        run: |
+          # 수동 실행 시 입력값 사용, 스케줄 실행 시 0으로 고정
+          NUM_NODES=${{ github.event.inputs.num_nodes || '0' }}
+          echo "노드 수를 ${NUM_NODES}로 조정합니다..."
+          gcloud container clusters resize ${{ env.CLUSTER }} \
+            --node-pool ${{ env.NODE_POOL }} \
+            --num-nodes ${NUM_NODES} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --quiet
+          echo "완료: 노드 수 ${NUM_NODES}로 조정됨"
