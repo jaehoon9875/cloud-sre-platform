@@ -25,5 +25,5 @@ repository_id = "sre-platform"
 # GKE
 cluster_name   = "sre-platform-cluster"
 machine_type   = "e2-standard-2"
-min_node_count = 1
+min_node_count = 0
 max_node_count = 3

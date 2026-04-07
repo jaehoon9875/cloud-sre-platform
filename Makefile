@@ -9,6 +9,14 @@ NODE_POOL   := sre-platform-cluster-spot-pool
 ## 클러스터 노드 수를 0으로 축소 (야간/주말 비용 절감용)
 ## control plane 비용($0.10/hr)은 유지되나 노드 VM 비용은 0원
 cluster-down:
+	gcloud container clusters update $(CLUSTER) \
+		--node-pool $(NODE_POOL) \
+		--enable-autoscaling \
+		--min-nodes 0 \
+		--max-nodes 3 \
+		--region $(REGION) \
+		--project $(PROJECT_ID) \
+		--quiet
 	gcloud container clusters resize $(CLUSTER) \
 		--node-pool $(NODE_POOL) \
 		--num-nodes 0 \
@@ -18,6 +26,14 @@ cluster-down:
 
 ## 클러스터 노드를 1대로 복구 (작업 재개 시)
 cluster-up:
+	gcloud container clusters update $(CLUSTER) \
+		--node-pool $(NODE_POOL) \
+		--enable-autoscaling \
+		--min-nodes 0 \
+		--max-nodes 3 \
+		--region $(REGION) \
+		--project $(PROJECT_ID) \
+		--quiet
 	gcloud container clusters resize $(CLUSTER) \
 		--node-pool $(NODE_POOL) \
 		--num-nodes 1 \
