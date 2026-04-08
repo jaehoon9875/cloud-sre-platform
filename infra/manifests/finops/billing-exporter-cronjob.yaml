@@ -46,13 +46,14 @@ spec:
                 - name: BIGQUERY_DATASET
                   value: "billing_export"
                 # Pushgateway ClusterIP 서비스 — 클러스터 내부에서 직접 접근
+                # 서비스명: pushgateway-prometheus-pushgateway (Helm release 기반)
                 - name: PUSHGATEWAY_URL
-                  value: "http://pushgateway.monitoring:9091"
-              # 리소스 최소화 (GCP 크레딧 절약)
+                  value: "http://pushgateway-prometheus-pushgateway.monitoring:9091"
+              # 리소스 최소화 (GCP 크레딧 절약, BigQuery 조회 후 종료하는 단발성 Job)
               resources:
                 requests:
-                  cpu: 50m
-                  memory: 128Mi
+                  cpu: 10m
+                  memory: 64Mi
                 limits:
-                  cpu: 200m
-                  memory: 256Mi
+                  cpu: 100m
+                  memory: 128Mi
