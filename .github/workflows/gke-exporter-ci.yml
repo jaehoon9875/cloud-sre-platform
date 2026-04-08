@@ -1,0 +1,65 @@
+name: gke-spot-exporter CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'custom-exporter/**'
+
+env:
+  PROJECT_ID: cloud-sre-platform-dev
+  REGION: asia-northeast3
+  REPOSITORY: sre-platform
+  IMAGE: gke-spot-exporter
+
+jobs:
+  build-and-push:
+    name: Build & Push to Artifact Registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Workload Identity Federation 필수
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # GCP Workload Identity Federation 인증
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      # Docker가 Artifact Registry에 push할 수 있도록 인증 설정
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # go vet으로 기본 코드 품질 검사
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Go vet
+        working-directory: custom-exporter
+        run: go vet ./...
+
+      # 이미지 태그: Git SHA (정확한 버전 추적) + latest
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest \
+            ./custom-exporter
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest
+
+      - name: Print image URL
+        run: |
+          echo "이미지 주소:"
+          echo "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"

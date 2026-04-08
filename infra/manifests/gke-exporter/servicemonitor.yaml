@@ -1,0 +1,18 @@
+# Prometheus가 gke-spot-exporter /metrics 를 자동 수집하도록 설정
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gke-spot-exporter
+  namespace: monitoring
+  labels:
+    # kube-prometheus-stack이 감지하는 라벨
+    release: my-kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gke-spot-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      # 5분 캐시 주기와 맞추어 scrape 간격 설정
+      interval: 5m

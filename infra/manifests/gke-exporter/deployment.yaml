@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gke-spot-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: gke-spot-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gke-spot-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gke-spot-exporter
+    spec:
+      # Workload Identity가 설정된 ServiceAccount 사용
+      serviceAccountName: gke-spot-exporter
+      containers:
+        - name: gke-spot-exporter
+          image: asia-northeast3-docker.pkg.dev/cloud-sre-platform-dev/sre-platform/gke-spot-exporter:latest
+          ports:
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: GCP_PROJECT_ID
+              value: "cloud-sre-platform-dev"
+            - name: GKE_CLUSTER_NAME
+              value: "sre-platform-cluster"
+            - name: PORT
+              value: "9090"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 15
