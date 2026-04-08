@@ -1,0 +1,62 @@
+name: GKE 장애 진단 리포트
+
+on:
+  # 수동 트리거 — 장애 발생 시 GitHub Actions UI에서 실행
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: '조회할 네임스페이스 (전체: all)'
+        required: false
+        default: 'all'
+      log_tail_lines:
+        description: '비정상 Pod 로그 최대 줄 수'
+        required: false
+        default: '30'
+
+env:
+  PROJECT_ID: cloud-sre-platform-dev
+  REGION: asia-northeast3
+  CLUSTER: sre-platform-cluster
+
+jobs:
+  collect:
+    name: 장애 진단 정보 수집 및 Slack 전송
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Workload Identity Federation 필수
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: pip install -r automation/incident/requirements.txt
+
+      - name: GCP 인증 (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: gcloud CLI 설정
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: GKE 자격증명 설정 (kubeconfig)
+        run: |
+          gcloud container clusters get-credentials ${{ env.CLUSTER }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }}
+
+      - name: incident-collector 실행
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          NAMESPACE: ${{ github.event.inputs.namespace || 'all' }}
+          LOG_TAIL_LINES: ${{ github.event.inputs.log_tail_lines || '30' }}
+        run: python automation/incident/incident-collector.py
