@@ -42,6 +42,11 @@ jobs:
         with:
           go-version: '1.22'
 
+      # go.sum이 없을 경우 자동 생성
+      - name: Go mod tidy
+        working-directory: custom-exporter
+        run: go mod tidy
+
       - name: Go vet
         working-directory: custom-exporter
         run: go vet ./...
