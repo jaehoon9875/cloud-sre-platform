@@ -47,6 +47,9 @@ jobs:
 
       - name: gcloud CLI 설정
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          # GKE kubeconfig 인증에 필요한 플러그인 설치
+          install_components: 'gke-gcloud-auth-plugin'
 
       - name: GKE 자격증명 설정 (kubeconfig)
         run: |
@@ -59,4 +62,6 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           NAMESPACE: ${{ github.event.inputs.namespace || 'all' }}
           LOG_TAIL_LINES: ${{ github.event.inputs.log_tail_lines || '30' }}
+          # gke-gcloud-auth-plugin 사용 활성화
+          USE_GKE_GCLOUD_AUTH_PLUGIN: "True"
         run: python automation/incident/incident-collector.py
