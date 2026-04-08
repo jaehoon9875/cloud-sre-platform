@@ -75,6 +75,9 @@ gcloud iam service-accounts create billing-exporter \
   --display-name="billing-exporter (FinOps CronJob)"
 ```
 
+> "already exists" 오류가 뜨면 이미 생성된 것이므로 Step 2로 넘어간다.
+> 기존 SA 확인: `gcloud iam service-accounts describe billing-exporter@cloud-sre-platform-dev.iam.gserviceaccount.com`
+
 ### Step 2. BigQuery 권한 부여
 
 ```bash
