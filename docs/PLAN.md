@@ -7,7 +7,7 @@
 | Stage 1 | GCP 인프라 프로비저닝 (Terraform) | ✅ 완료 |
 | Stage 2 | Observability Stack 이전 (ArgoCD + Helm) | ✅ 완료 |
 | Stage 3 | FinOps + Python 자동화 | ✅ 완료 |
-| Stage 4 | Go Custom Exporter | 🔲 진행 전 |
+| Stage 4 | Go Custom Exporter | ✅ 완료 |
 
 ---
 
@@ -105,13 +105,14 @@
 
 ### 체크리스트
 
-- [ ] exporter 설계 (수집 메트릭 정의)
-- [ ] Go 프로젝트 초기화 (`go mod init`)
-- [ ] `prometheus/client_golang` 연동
-- [ ] `/metrics` 엔드포인트 구현
-- [ ] Dockerfile 작성
-- [ ] GKE 배포 및 Grafana 연동
-- [ ] `custom-exporter/CLAUDE.md` 작성
+- [x] exporter 설계 — GKE Spot 노드 현황 + 선점 이벤트 + 절감액 추정
+- [x] Go 프로젝트 초기화 (`go mod init`)
+- [x] `prometheus/client_golang` 연동 (Collector 인터페이스 구현)
+- [x] `/metrics` 엔드포인트 구현 + 5분 캐시 (GCP API 비용 절감)
+- [x] Dockerfile 작성 (multi-stage, distroless)
+- [x] GKE 배포 및 Grafana 연동 (Workload Identity + ArgoCD + ServiceMonitor)
+- [x] `custom-exporter/CLAUDE.md` 작성
+- [x] CI에서 deployment.yaml 이미지 태그 자동 업데이트 → ArgoCD 자동 배포
 
 ---
 
