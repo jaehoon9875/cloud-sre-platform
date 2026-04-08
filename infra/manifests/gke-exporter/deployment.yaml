@@ -19,7 +19,7 @@ spec:
       serviceAccountName: gke-spot-exporter
       containers:
         - name: gke-spot-exporter
-          image: asia-northeast3-docker.pkg.dev/cloud-sre-platform-dev/sre-platform/gke-spot-exporter:latest
+          image: asia-northeast3-docker.pkg.dev/cloud-sre-platform-dev/sre-platform/gke-spot-exporter:e2f6aa85d4094c45533adfb50104895d9814de87
           ports:
             - name: metrics
               containerPort: 9090
