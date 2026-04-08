@@ -30,17 +30,23 @@ BUDGET_USD = 300.0
 MONTH_START  = date.today().replace(day=1).isoformat()
 
 
-def fetch_latest_date(client: bigquery.Client) -> str:
-    """BigQuery에 데이터가 존재하는 가장 최근 날짜를 조회한다."""
+def fetch_latest_date(client: bigquery.Client) -> str | None:
+    """
+    BigQuery에 데이터가 존재하는 가장 최근 날짜를 조회한다.
+    이번 달 데이터가 없으면 최근 30일로 범위를 확장한다.
+    데이터가 전혀 없으면 None을 반환한다.
+    """
+    lookback_start = (date.today() - timedelta(days=30)).isoformat()
     query = f"""
         SELECT MAX(DATE(usage_start_time)) AS latest_date
         FROM `{GCP_PROJECT_ID}.{BQ_DATASET}.gcp_billing_export_v1_*`
-        WHERE DATE(usage_start_time) >= '{MONTH_START}'
+        WHERE DATE(usage_start_time) >= '{lookback_start}'
     """
     result = list(client.query(query).result())
     latest = result[0].latest_date
     if latest is None:
-        raise RuntimeError("BigQuery에 이번 달 비용 데이터가 없습니다.")
+        print("[cost-reporter] BigQuery에 최근 30일 비용 데이터가 없습니다.")
+        return None
     latest_str = latest.isoformat()
     print(f"[cost-reporter] BigQuery 최신 데이터 기준일: {latest_str}")
     return latest_str
@@ -194,11 +200,40 @@ def send_slack(message: dict) -> None:
     print("[cost-reporter] Slack 전송 완료")
 
 
+def build_no_data_message() -> dict:
+    """BigQuery에 데이터가 없을 때 Slack에 보낼 안내 메시지를 생성한다."""
+    return {
+        "blocks": [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": "📊 GCP 비용 리포트"}
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        "⚠️ BigQuery에 최근 30일 비용 데이터가 없습니다.\n"
+                        "GCP 콘솔 → 결제 → 결제 내보내기에서 BigQuery export 활성화 여부를 확인하세요.\n"
+                        "활성화 후 데이터 수집까지 최대 48시간이 소요될 수 있습니다."
+                    )
+                }
+            }
+        ]
+    }
+
+
 def main() -> None:
     client = bigquery.Client(project=GCP_PROJECT_ID)
 
     # BigQuery에 데이터가 있는 가장 최근 날짜 조회 (export 지연 대응)
-    target_date   = fetch_latest_date(client)
+    target_date = fetch_latest_date(client)
+
+    # 데이터가 없으면 안내 메시지만 전송하고 정상 종료
+    if target_date is None:
+        send_slack(build_no_data_message())
+        return
+
     # 서비스별 비용 조회 (최신 데이터 기준일)
     daily_rows    = fetch_daily_cost_by_service(client, target_date)
     # 이번 달 누적 총 비용 조회
