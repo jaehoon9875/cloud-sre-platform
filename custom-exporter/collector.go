@@ -242,21 +242,25 @@ func (c *GKECollector) fetchNodeData(ctx context.Context) ([]nodeMetric, error) 
 }
 
 // fetchPreemptionData — 최근 24시간 내 Spot 선점(preemption) 이벤트 수 조회
-// GCP Operations API의 operationType="compute.instances.preempted" 이벤트를 집계한다
+// GCP Operations API는 insertTime 비교 연산자를 지원하지 않으므로
+// operationType만 API 필터로 걸고, 시간 필터링은 Go 코드에서 수행한다
 func (c *GKECollector) fetchPreemptionData(ctx context.Context) ([]preemptionMetric, error) {
-	since := time.Now().Add(-preemptionLookback).UTC().Format(time.RFC3339)
-	filter := fmt.Sprintf(
-		`operationType="compute.instances.preempted" AND insertTime>="%s"`, since,
-	)
+	since := time.Now().Add(-preemptionLookback)
+	filter := `operationType="compute.instances.preempted"`
 
 	zoneCounts := make(map[string]float64)
 
 	err := c.computeSvc.GlobalOperations.AggregatedList(c.projectID).
 		Filter(filter).
-		Fields("items/*/operations(zone,operationType)").
+		Fields("items/*/operations(zone,operationType,insertTime)").
 		Pages(ctx, func(page *compute.OperationAggregatedList) error {
 			for _, scopedList := range page.Items {
 				for _, op := range scopedList.Operations {
+					// API가 시간 필터를 지원하지 않으므로 Go에서 직접 필터링
+					insertTime, err := time.Parse(time.RFC3339, op.InsertTime)
+					if err != nil || insertTime.Before(since) {
+						continue
+					}
 					zone := lastSegment(op.Zone)
 					if zone != "" {
 						zoneCounts[zone]++
