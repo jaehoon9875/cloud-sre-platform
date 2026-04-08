@@ -6,7 +6,7 @@
 |-------|------|------|
 | Stage 1 | GCP 인프라 프로비저닝 (Terraform) | ✅ 완료 |
 | Stage 2 | Observability Stack 이전 (ArgoCD + Helm) | ✅ 완료 |
-| Stage 3 | FinOps + Python 자동화 | 🔄 진행 예정 |
+| Stage 3 | FinOps + Python 자동화 | ✅ 완료 |
 | Stage 4 | Go Custom Exporter | 🔲 진행 전 |
 
 ---
@@ -78,24 +78,24 @@
 ### 체크리스트
 
 **FinOps 파이프라인**
-- [ ] `billing-exporter.py`: BigQuery → Prometheus Pushgateway
-- [ ] Grafana FinOps 대시보드 (`dashboards/finops-cost.json`)
-  - [ ] 일별/주별 비용 추이
-  - [ ] 네임스페이스별 비용 분포
-  - [ ] 예산 소진율
-- [ ] `cost-alerts.yaml`: 비용 임계치 Prometheus Alert
+- [x] `billing-exporter.py`: BigQuery → Prometheus Pushgateway
+- [x] Grafana FinOps 대시보드 (`dashboards/finops-cost.json`)
+  - [x] 일별/주별 비용 추이
+  - [x] 예산 소진율
+  - [x] 서비스별 비용 분포
+- [x] `cost-alerts.yaml`: 비용 임계치 Prometheus Alert
 
 **비용 리포트 자동화**
-- [ ] `cost-reporter.py`: 일별 비용 Slack 리포트
-- [ ] Slack Incoming Webhook 설정
-- [ ] GitHub Actions scheduled workflow (매일 오전 9시)
+- [x] `cost-reporter.py`: 일별 비용 Slack 리포트 (gross/net 분리 표시)
+- [x] Slack Incoming Webhook 설정
+- [x] GitHub Actions scheduled workflow (매일 KST 09:00)
 
 **운영 자동화**
-- [ ] `scale-scheduler.py`: 야간/주말 node scale-down
-- [ ] `incident-collector.py`: GKE 장애 진단 자동 수집
+- [x] `scale-scheduler.py`: GitHub Actions workflow로 대체 (`cluster-scale-down.yml`) — scale-to-0 구조적 한계로 Python 스크립트 스킵 (docs/ISSUES.md #2 참고)
+- [x] `incident-collector.py`: GKE 장애 진단 자동 수집 → Slack 전송 (GitHub Actions workflow_dispatch, 동작 확인 완료)
 
 **문서**
-- [ ] `docs/finops-guide.md` 작성
+- [x] `docs/finops-guide.md` 작성
 
 ---
 
