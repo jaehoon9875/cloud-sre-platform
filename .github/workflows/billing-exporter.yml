@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'automation/finops/**'
+  # 수동 실행 (이미지 강제 재빌드 시 사용)
+  workflow_dispatch:
 
 env:
   PROJECT_ID: cloud-sre-platform-dev
