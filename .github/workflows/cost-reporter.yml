@@ -1,0 +1,46 @@
+name: GCP 일별 비용 Slack 리포트
+
+on:
+  # 매일 KST 09:00 (UTC 00:00) 실행
+  schedule:
+    - cron: '0 0 * * *'
+  # 수동 실행 (테스트 또는 재전송 시 사용)
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: cloud-sre-platform-dev
+  BIGQUERY_DATASET: billing_export
+
+jobs:
+  report:
+    name: 비용 리포트 조회 및 Slack 전송
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Workload Identity Federation 필수
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: pip install google-cloud-bigquery
+
+      - name: GCP 인증 (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: cost-reporter 실행
+        env:
+          GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          BIGQUERY_DATASET: ${{ env.BIGQUERY_DATASET }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python automation/finops/cost-reporter.py
