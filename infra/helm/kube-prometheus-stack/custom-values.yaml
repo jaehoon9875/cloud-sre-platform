@@ -7,6 +7,12 @@ prometheus:
     # Exemplar 저장소 활성화 — 메트릭에 붙은 trace_id를 Prometheus가 보존
     enableFeatures:
       - exemplar-storage
+    # 모든 네임스페이스의 ServiceMonitor를 감지하도록 설정
+    # Pushgateway 등 별도 네임스페이스 배포 시에도 scrape 가능
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector:
+      matchLabels:
+        release: my-kube-prometheus-stack
 
 grafana:
   # admin 시크릿은 kubectl로 수동 생성 (Git에 올리지 않음)

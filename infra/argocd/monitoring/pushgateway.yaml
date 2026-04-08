@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pushgateway
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus-pushgateway
+    targetRevision: 2.14.0
+    helm:
+      releaseName: pushgateway
+      values: |
+        # ServiceMonitor 활성화 — kube-prometheus-stack이 자동으로 scrape
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+          additionalLabels:
+            # kube-prometheus-stack의 serviceMonitorSelector 기본 라벨
+            release: my-kube-prometheus-stack
+        service:
+          type: ClusterIP
+          port: 9091
+        # 리소스 최소화 (GCP 크레딧 절약)
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

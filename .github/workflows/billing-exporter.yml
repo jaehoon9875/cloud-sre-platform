@@ -1,0 +1,53 @@
+name: FinOps Billing Exporter
+
+on:
+  # 매일 KST 09:00 (UTC 00:00) 실행 — 전일 비용을 Pushgateway에 전송
+  schedule:
+    - cron: '0 0 * * *'
+  # 수동 실행 (테스트 또는 재전송 시 사용)
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: cloud-sre-platform-dev
+  BIGQUERY_DATASET: billing_export
+
+jobs:
+  export-billing:
+    name: BigQuery 비용 데이터 → Pushgateway 전송
+    runs-on: ubuntu-latest
+
+    # GCP 인증을 위한 Workload Identity Federation 권한
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: |
+          pip install \
+            google-cloud-bigquery \
+            prometheus-client
+
+      - name: GCP 인증 (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: billing-exporter 실행
+        env:
+          GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          BIGQUERY_DATASET: ${{ env.BIGQUERY_DATASET }}
+          # Pushgateway URL — GKE 외부 접근을 위해 kubectl port-forward 또는 LoadBalancer 필요
+          # 현재는 Repository Secret으로 관리 (내부 ClusterIP 접근 불가)
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+        run: |
+          python automation/finops/billing-exporter.py
