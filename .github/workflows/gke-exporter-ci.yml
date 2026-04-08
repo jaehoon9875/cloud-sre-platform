@@ -19,7 +19,7 @@ jobs:
     name: Build & Push to Artifact Registry
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # deployment.yaml 태그 업데이트 커밋을 위해 write 필요
       id-token: write  # Workload Identity Federation 필수
 
     steps:
@@ -65,7 +65,13 @@ jobs:
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest
 
-      - name: Print image URL
+      # deployment.yaml의 이미지 태그를 SHA로 수정 후 Git commit → ArgoCD 자동 감지
+      - name: Update image tag and commit
         run: |
-          echo "이미지 주소:"
-          echo "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
+          sed -i "s|${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:.*|${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}|" \
+            infra/manifests/gke-exporter/deployment.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add infra/manifests/gke-exporter/deployment.yaml
+          git commit -m "chore: gke-spot-exporter 이미지 태그 업데이트 → ${{ github.sha }}"
+          git push
