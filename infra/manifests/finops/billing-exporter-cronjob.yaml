@@ -1,0 +1,58 @@
+# billing-exporter CronJob
+# BigQuery에서 GCP 비용 데이터를 조회하여 Pushgateway로 전송
+# 실행 주기: 매일 KST 09:00 (UTC 00:00)
+# BigQuery 인증: GKE Workload Identity (SA 키 불필요)
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: billing-exporter
+  namespace: monitoring
+  annotations:
+    # GKE Workload Identity — GCP SA와 K8s SA를 연결
+    # GCP SA에 BigQuery Data Viewer + Job User 권한 필요
+    iam.gke.io/gcp-service-account: billing-exporter@cloud-sre-platform-dev.iam.gserviceaccount.com
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: billing-exporter
+  namespace: monitoring
+spec:
+  # 매일 UTC 00:00 (KST 09:00) 실행
+  schedule: "0 0 * * *"
+  # 동시 실행 방지 — 이전 Job이 실행 중이면 스킵
+  concurrencyPolicy: Forbid
+  # 완료된 Job 보관 수 제한 (로그 확인용)
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # 실패 시 최대 2회 재시도
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: billing-exporter
+          restartPolicy: OnFailure
+          containers:
+            - name: billing-exporter
+              # CI에서 빌드된 이미지 사용 (latest 태그)
+              image: asia-northeast3-docker.pkg.dev/cloud-sre-platform-dev/sre-platform/billing-exporter:latest
+              # 이미지가 업데이트되면 항상 pull
+              imagePullPolicy: Always
+              env:
+                - name: GCP_PROJECT_ID
+                  value: "cloud-sre-platform-dev"
+                - name: BIGQUERY_DATASET
+                  value: "billing_export"
+                # Pushgateway ClusterIP 서비스 — 클러스터 내부에서 직접 접근
+                - name: PUSHGATEWAY_URL
+                  value: "http://pushgateway.monitoring:9091"
+              # 리소스 최소화 (GCP 크레딧 절약)
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi

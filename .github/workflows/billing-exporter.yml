@@ -1,53 +1,53 @@
-name: FinOps Billing Exporter
+name: billing-exporter CI
 
 on:
-  # 매일 KST 09:00 (UTC 00:00) 실행 — 전일 비용을 Pushgateway에 전송
-  schedule:
-    - cron: '0 0 * * *'
-  # 수동 실행 (테스트 또는 재전송 시 사용)
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'automation/finops/**'
 
 env:
-  GCP_PROJECT_ID: cloud-sre-platform-dev
-  BIGQUERY_DATASET: billing_export
+  PROJECT_ID: cloud-sre-platform-dev
+  REGION: asia-northeast3
+  REPOSITORY: sre-platform
+  IMAGE: billing-exporter
 
 jobs:
-  export-billing:
-    name: BigQuery 비용 데이터 → Pushgateway 전송
+  build-and-push:
+    name: Build & Push to Artifact Registry
     runs-on: ubuntu-latest
-
-    # GCP 인증을 위한 Workload Identity Federation 권한
     permissions:
       contents: read
-      id-token: write
+      id-token: write  # Workload Identity Federation 필수
 
     steps:
-      - name: 코드 체크아웃
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Python 설치
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: 의존성 설치
-        run: |
-          pip install \
-            google-cloud-bigquery \
-            prometheus-client
-
-      - name: GCP 인증 (Workload Identity Federation)
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-      - name: billing-exporter 실행
-        env:
-          GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
-          BIGQUERY_DATASET: ${{ env.BIGQUERY_DATASET }}
-          # Pushgateway URL — GKE 외부 접근을 위해 kubectl port-forward 또는 LoadBalancer 필요
-          # 현재는 Repository Secret으로 관리 (내부 ClusterIP 접근 불가)
-          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # 이미지 태그: Git SHA (CronJob manifest에서 정확한 버전 추적)
+      - name: Build Docker image
         run: |
-          python automation/finops/billing-exporter.py
+          docker build \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest \
+            ./automation/finops
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest
+
+      - name: Print image URL
+        run: |
+          echo "이미지 주소:"
+          echo "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
