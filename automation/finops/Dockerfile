@@ -14,6 +14,7 @@ WORKDIR /app
 
 COPY --from=builder /root/.local /root/.local
 COPY billing-exporter.py .
+COPY currency.py .
 
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
