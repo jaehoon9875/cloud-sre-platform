@@ -118,8 +118,8 @@
 
 ## 마무리 작업
 
-- [ ] `docs/architecture.md` 업데이트 — GKE Exporter 추가된 아키텍처 반영
-- [ ] `README.md` 업데이트 — 전체 스택 완성 기준으로 정리 (구축 순서, 기술 스택 등)
+- [x] `docs/architecture.md` 업데이트 — GKE Exporter 추가된 아키텍처 반영
+- [x] `README.md` 업데이트 — 전체 스택 완성 기준으로 정리 (구축 순서, 기술 스택 등)
 - [ ] Grafana 대시보드 스크린샷 촬영 — 실제 메트릭이 찍힌 화면을 README에 첨부
 
 ---
