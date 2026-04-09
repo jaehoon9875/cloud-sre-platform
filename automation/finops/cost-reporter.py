@@ -24,10 +24,13 @@ GCP_PROJECT_ID  = os.environ["GCP_PROJECT_ID"]
 BQ_DATASET      = os.environ.get("BIGQUERY_DATASET", "billing_export")
 SLACK_WEBHOOK   = os.environ["SLACK_WEBHOOK_URL"]
 
-# 예산 기준 (USD)
-BUDGET_USD = 300.0
+# 무료 체험 크레딧 총액 (KRW)
+# GCP 무료 체험은 $300 USD 기준으로 제공되며, 가입 시점의 환율로 원화 금액이 확정된다.
+# 이후 환율이 변동되어도 이 금액은 변하지 않는다.
+# 값 확인: GCP 콘솔 → 결제 → 결제 계정 개요 → 무료 체험판 크레딧 → 총 크레딧
+FREE_TRIAL_BUDGET_KRW = 453_008
 
-MONTH_START  = date.today().replace(day=1).isoformat()
+MONTH_START = date.today().replace(day=1).isoformat()
 
 
 def fetch_latest_date(client: bigquery.Client) -> str | None:
@@ -54,16 +57,19 @@ def fetch_latest_date(client: bigquery.Client) -> str | None:
 
 def fetch_daily_cost_by_service(client: bigquery.Client, target_date: str) -> list[dict]:
     """
-    서비스별 특정일 비용 조회.
-    gross_usd: 크레딧 적용 전 금액 / net_usd: 크레딧 적용 후 실청구 금액
+    서비스별 특정일 실제 사용량(gross) 조회.
+    credits 배열에서 FREE_TRIAL 타입만 합산하여 소진된 크레딧을 정확히 계산한다.
+    환율 계산 없이 BigQuery에 저장된 원화(KRW) 금액을 그대로 사용한다.
     """
     query = f"""
         SELECT
             service.description AS service,
-            SUM(cost) AS gross_usd,
-            SUM(cost) + SUM(
-                (SELECT IFNULL(SUM(c.amount), 0) FROM UNNEST(credits) AS c)
-            ) AS net_usd
+            SUM(cost) AS gross,
+            ABS(SUM(
+                (SELECT IFNULL(SUM(c.amount), 0)
+                 FROM UNNEST(credits) AS c
+                 WHERE c.type = 'FREE_TRIAL')
+            )) AS free_trial_used
         FROM
             `{GCP_PROJECT_ID}.{BQ_DATASET}.gcp_billing_export_v1_*`
         WHERE
@@ -72,13 +78,13 @@ def fetch_daily_cost_by_service(client: bigquery.Client, target_date: str) -> li
         GROUP BY
             service
         ORDER BY
-            gross_usd DESC
+            gross DESC
     """
     rows = [
         {
-            "service":   r.service,
-            "gross_usd": float(r.gross_usd),
-            "net_usd":   float(r.net_usd),
+            "service":         r.service,
+            "gross":           float(r.gross),
+            "free_trial_used": float(r.free_trial_used),
         }
         for r in client.query(query).result()
     ]
@@ -86,53 +92,72 @@ def fetch_daily_cost_by_service(client: bigquery.Client, target_date: str) -> li
     return rows
 
 
-def fetch_monthly_total(client: bigquery.Client) -> dict:
+def fetch_monthly_gross(client: bigquery.Client) -> float:
+    """이번 달 누적 실제 사용량(gross)을 조회한다."""
+    query = f"""
+        SELECT SUM(cost) AS monthly_gross
+        FROM `{GCP_PROJECT_ID}.{BQ_DATASET}.gcp_billing_export_v1_*`
+        WHERE DATE(usage_start_time) >= '{MONTH_START}'
+          AND cost > 0
     """
-    이번 달 누적 총 비용 조회.
-    반환: {"gross_usd": ..., "net_usd": ...}
+    result = list(client.query(query).result())
+    gross = float(result[0].monthly_gross or 0.0)
+    print(f"[cost-reporter] 이번 달 누적 사용량: ₩{gross:,.0f}")
+    return gross
+
+
+def fetch_cumulative_free_trial_used(client: bigquery.Client) -> float:
+    """
+    전체 기간 누적 FREE_TRIAL 크레딧 소진량을 조회한다.
+    BigQuery credits 배열의 type='FREE_TRIAL' 항목만 합산하므로
+    환율 계산 없이 정확한 원화(KRW) 금액이 반환된다.
     """
     query = f"""
         SELECT
-            SUM(cost) AS gross_usd,
-            SUM(cost) + SUM(
-                (SELECT IFNULL(SUM(c.amount), 0) FROM UNNEST(credits) AS c)
-            ) AS net_usd
-        FROM `{GCP_PROJECT_ID}.{BQ_DATASET}.gcp_billing_export_v1_*`
-        WHERE DATE(usage_start_time) >= '{MONTH_START}'
+            ABS(SUM(c.amount)) AS total_free_trial_used
+        FROM
+            `{GCP_PROJECT_ID}.{BQ_DATASET}.gcp_billing_export_v1_*`,
+            UNNEST(credits) AS c
+        WHERE
+            c.type = 'FREE_TRIAL'
     """
     result = list(client.query(query).result())
-    gross = float(result[0].gross_usd or 0.0)
-    net   = float(result[0].net_usd   or 0.0)
-    print(f"[cost-reporter] 이번 달 누적 비용 — gross: ${gross:.2f}, net: ${net:.2f}")
-    return {"gross_usd": gross, "net_usd": net}
+    used = float(result[0].total_free_trial_used or 0.0)
+    print(f"[cost-reporter] 누적 크레딧 소진량: ₩{used:,.0f}")
+    return used
 
 
-def build_slack_message(target_date: str, daily_rows: list[dict], monthly_total: dict) -> dict:
-    """Slack Block Kit 형식의 메시지를 생성한다."""
-    daily_gross = sum(r["gross_usd"] for r in daily_rows)
-    daily_net   = sum(r["net_usd"]   for r in daily_rows)
-    monthly_gross = monthly_total["gross_usd"]
-    monthly_net   = monthly_total["net_usd"]
+def build_slack_message(
+    target_date: str,
+    daily_rows: list[dict],
+    monthly_gross: float,
+    cumulative_used: float,
+) -> dict:
+    """Slack Block Kit 형식의 메시지를 생성한다. 무료 크레딧 소진 현황을 중심으로 표시한다."""
+    daily_gross = sum(r["gross"] for r in daily_rows)
 
-    # 예산 소진율은 gross 기준 (실제 사용량 파악용)
-    budget_pct = monthly_gross / BUDGET_USD * 100
-    if budget_pct >= 90:
+    # 잔여 크레딧 및 소진율 계산
+    credit_remaining = FREE_TRIAL_BUDGET_KRW - cumulative_used
+    credit_used_pct  = cumulative_used / FREE_TRIAL_BUDGET_KRW * 100
+
+    # 소진율에 따른 상태 표시
+    if credit_used_pct >= 90:
         status_emoji = "🔴"
-        status_text  = f"예산의 {budget_pct:.1f}%를 소진했습니다. 즉시 비용 절감이 필요합니다."
-    elif budget_pct >= 66:
+        status_text  = f"무료 크레딧의 {credit_used_pct:.1f}%를 소진했습니다. 즉시 사용량을 줄이세요."
+    elif credit_used_pct >= 66:
         status_emoji = "🟡"
-        status_text  = f"예산의 {budget_pct:.1f}%를 소진했습니다. 비용 추이를 주의 깊게 모니터링하세요."
+        status_text  = f"무료 크레딧의 {credit_used_pct:.1f}%를 소진했습니다. 추이를 주의하세요."
     else:
         status_emoji = "🟢"
-        status_text  = f"예산의 {budget_pct:.1f}%를 소진했습니다. 정상 범위입니다."
+        status_text  = f"무료 크레딧의 {credit_used_pct:.1f}%를 소진했습니다. 정상 범위입니다."
 
-    # 서비스별 내역 — gross / net 함께 표시
+    # 서비스별 사용량 내역
     service_lines = "\n".join(
-        f"  • {r['service']:<28} ${r['gross_usd']:.2f}  (실청구 ${r['net_usd']:.2f})"
+        f"  • {r['service']:<28} ₩{r['gross']:>10,.0f}"
         for r in daily_rows
     )
     if not service_lines:
-        service_lines = "  • 해당 날짜 비용 데이터 없음"
+        service_lines = "  • 해당 날짜 사용량 데이터 없음"
 
     message = {
         "blocks": [
@@ -140,45 +165,60 @@ def build_slack_message(target_date: str, daily_rows: list[dict], monthly_total:
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": f"📊 GCP 비용 리포트 ({MONTH_START} ~ {target_date})"
+                    "text": f"📊 GCP 비용 리포트 ({target_date})"
                 }
+            },
+            # ── 무료 크레딧 현황 (핵심 지표) ──────────────────────────────
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": "*🎁 무료 체험 크레딧 현황*"}
             },
             {
                 "type": "section",
                 "fields": [
                     {
                         "type": "mrkdwn",
-                        "text": (
-                            f"*{target_date} 사용량*\n"
-                            f"정가 ${daily_gross:.2f}  →  실청구 ${daily_net:.2f}"
-                        )
+                        "text": f"*소진된 크레딧 (누적)*\n₩{cumulative_used:,.0f}  ({credit_used_pct:.1f}%)"
                     },
                     {
                         "type": "mrkdwn",
-                        "text": (
-                            f"*이번 달 누적*\n"
-                            f"정가 ${monthly_gross:.2f}  →  실청구 ${monthly_net:.2f}"
-                        )
+                        "text": f"*잔여 크레딧*\n₩{credit_remaining:,.0f}"
                     }
                 ]
             },
+            {"type": "divider"},
+            # ── 사용량 요약 ────────────────────────────────────────────────
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": "*📈 실제 사용량 (크레딧 차감 전)*"}
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*{target_date} 사용량*\n₩{daily_gross:,.0f}"
+                    },
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*{MONTH_START[:7]} 이번 달 누적*\n₩{monthly_gross:,.0f}"
+                    }
+                ]
+            },
+            # ── 서비스별 내역 ──────────────────────────────────────────────
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*서비스별 내역 ({target_date})*\n```{service_lines}```"
+                    "text": f"*서비스별 사용량 ({target_date})*\n```{service_lines}```"
                 }
             },
+            # ── 상태 요약 ──────────────────────────────────────────────────
             {
                 "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"{status_emoji} {status_text}"
-                }
+                "text": {"type": "mrkdwn", "text": f"{status_emoji} {status_text}"}
             },
-            {
-                "type": "divider"
-            }
+            {"type": "divider"}
         ]
     }
     return message
@@ -234,13 +274,13 @@ def main() -> None:
         send_slack(build_no_data_message())
         return
 
-    # 서비스별 비용 조회 (최신 데이터 기준일)
-    daily_rows    = fetch_daily_cost_by_service(client, target_date)
-    # 이번 달 누적 총 비용 조회
-    monthly_total = fetch_monthly_total(client)
+    # 각종 비용 데이터 조회
+    daily_rows      = fetch_daily_cost_by_service(client, target_date)
+    monthly_gross   = fetch_monthly_gross(client)
+    cumulative_used = fetch_cumulative_free_trial_used(client)
 
     # Slack 메시지 생성 및 전송
-    message = build_slack_message(target_date, daily_rows, monthly_total)
+    message = build_slack_message(target_date, daily_rows, monthly_gross, cumulative_used)
     send_slack(message)
 
 
