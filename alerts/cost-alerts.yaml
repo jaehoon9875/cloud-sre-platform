@@ -11,40 +11,40 @@ spec:
     - name: gcp.cost
       interval: 1h
       rules:
-        # 전일 총 비용이 ₩15,000을 초과한 경우
-        # 기준: 무료 체험 총액 ₩453,008(=$300)의 약 3.3% — 일별 과다 지출 조기 감지
+        # 전일 총 비용이 $10를 초과한 경우
+        # billing-exporter가 KRW → USD 변환 후 Pushgateway에 전송하므로 메트릭은 USD 기준
         - alert: GCPDailyCostHigh
-          expr: sum(gcp_cost_daily_krw) > 15000
+          expr: sum(gcp_cost_daily_usd) > 10
           for: 0m
           labels:
             severity: warning
           annotations:
             summary: "GCP 일일 비용 경고"
-            description: "어제 GCP 총 비용이 ₩{{ $value | printf \"%.0f\" }}로 ₩15,000을 초과했습니다."
+            description: "어제 GCP 총 비용이 ${{ $value | printf \"%.2f\" }}로 $10를 초과했습니다."
 
-        # 이번 달 누적 비용이 ₩299,000 초과 (무료 체험 총액 ₩453,008의 66%)
+        # 이번 달 누적 비용이 $200 초과 (무료 체험 $300의 66%)
         - alert: GCPMonthlyCostWarning
-          expr: max(gcp_cost_monthly_total_krw) > 299000
+          expr: max(gcp_cost_monthly_total_usd) > 200
           for: 0m
           labels:
             severity: warning
           annotations:
-            summary: "GCP 월간 비용 경고 (₩299,000 초과)"
-            description: "이번 달 GCP 누적 비용이 ₩{{ $value | printf \"%.0f\" }}입니다. 무료 체험 크레딧(₩453,008)의 66%를 초과했습니다."
+            summary: "GCP 월간 비용 경고 ($200 초과)"
+            description: "이번 달 GCP 누적 비용이 ${{ $value | printf \"%.2f\" }}입니다. 무료 체험 크레딧($300)의 66%를 초과했습니다."
 
-        # 이번 달 누적 비용이 ₩408,000 초과 (무료 체험 총액 ₩453,008의 90%)
+        # 이번 달 누적 비용이 $270 초과 (무료 체험 $300의 90%)
         - alert: GCPMonthlyCostCritical
-          expr: max(gcp_cost_monthly_total_krw) > 408000
+          expr: max(gcp_cost_monthly_total_usd) > 270
           for: 0m
           labels:
             severity: critical
           annotations:
-            summary: "GCP 월간 비용 위험 (₩408,000 초과)"
-            description: "이번 달 GCP 누적 비용이 ₩{{ $value | printf \"%.0f\" }}입니다. 무료 체험 크레딧(₩453,008)의 90%를 초과했습니다. 즉시 비용 절감이 필요합니다."
+            summary: "GCP 월간 비용 위험 ($270 초과)"
+            description: "이번 달 GCP 누적 비용이 ${{ $value | printf \"%.2f\" }}입니다. 무료 체험 크레딧($300)의 90%를 초과했습니다. 즉시 비용 절감이 필요합니다."
 
         # billing-exporter가 24시간 이상 데이터를 전송하지 않은 경우
         - alert: BillingExporterDown
-          expr: absent(gcp_cost_monthly_total_krw) == 1
+          expr: absent(gcp_cost_monthly_total_usd) == 1
           for: 25h
           labels:
             severity: warning
