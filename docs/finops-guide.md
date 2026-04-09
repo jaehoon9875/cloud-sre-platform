@@ -36,6 +36,10 @@ GitHub Actions scheduled workflow
 GCP 결제 데이터를 BigQuery로 내보내는 설정. **GCP 콘솔에서만 설정 가능** (Terraform 미지원).  
 이 데이터를 기반으로 Stage 3에서 Python FinOps 파이프라인을 구성한다.
 
+> **통화 단위 참고**
+> BigQuery billing export 데이터는 GCP 결제 계정의 통화로 저장된다. 한국 계정은 **KRW(원화)** 기준으로 저장되며, `cost-reporter.py`도 KRW 기준으로 동작한다.
+> 무료 체험 크레딧은 $300 USD이지만, 가입 시점 환율로 원화 금액이 확정(`FREE_TRIAL_BUDGET_KRW`)되고 이후 환율이 변동되어도 이 값은 변하지 않는다.
+
 **설정 절차:**
 
 1. GCP 콘솔 → 결제(Billing) → 결제 내보내기(Billing export)

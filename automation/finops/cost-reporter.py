@@ -25,8 +25,10 @@ BQ_DATASET      = os.environ.get("BIGQUERY_DATASET", "billing_export")
 SLACK_WEBHOOK   = os.environ["SLACK_WEBHOOK_URL"]
 
 # 무료 체험 크레딧 총액 (KRW)
-# GCP 무료 체험은 $300 USD 기준으로 제공되며, 가입 시점의 환율로 원화 금액이 확정된다.
-# 이후 환율이 변동되어도 이 금액은 변하지 않는다.
+# GCP 무료 체험은 $300 USD 기준으로 제공되지만, 실제 결제 통화는 계정 생성 국가를 따른다.
+# 한국 계정은 KRW로 운영되며, BigQuery billing export 데이터도 KRW로 저장된다.
+# 크레딧 총액은 가입 시점의 환율로 원화 금액이 확정되며, 이후 환율이 변동되어도 변하지 않는다.
+# → 환율 변동에 무관하게 이 값은 고정값으로 사용할 수 있다.
 # 값 확인: GCP 콘솔 → 결제 → 결제 계정 개요 → 무료 체험판 크레딧 → 총 크레딧
 FREE_TRIAL_BUDGET_KRW = 453_008
 
