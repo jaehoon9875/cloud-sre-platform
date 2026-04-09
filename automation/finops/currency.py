@@ -48,6 +48,7 @@ def fetch_conversion_rate(
         WHERE DATE(usage_start_time) >= DATE_TRUNC(CURRENT_DATE(), MONTH)
           AND currency_conversion_rate IS NOT NULL
           AND currency_conversion_rate > 0
+        GROUP BY currency
         LIMIT 1
     """
     result = list(client.query(query).result())
