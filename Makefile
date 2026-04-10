@@ -67,4 +67,28 @@ tf-apply:
 tf-destroy:
 	cd terraform && terraform destroy
 
-.PHONY: cluster-down cluster-up cluster-status tf-plan tf-apply tf-destroy
+# ── 로컬 접근 (Port-forward) ──────────────────────────────────────────────────
+
+## 운영 도구 전체 포트포워드 (Grafana/Prometheus/AlertManager/ArgoCD)
+pf:
+	./scripts/portforward.sh all
+
+## 실행 중인 포트포워드 전체 종료
+pf-stop:
+	./scripts/portforward.sh stop
+
+## 특정 서비스만 포트포워드 (예: make pf-grafana)
+pf-grafana:
+	./scripts/portforward.sh grafana
+
+pf-prometheus:
+	./scripts/portforward.sh prometheus
+
+pf-alertmanager:
+	./scripts/portforward.sh alertmanager
+
+pf-argocd:
+	./scripts/portforward.sh argocd
+
+.PHONY: cluster-down cluster-up cluster-status tf-plan tf-apply tf-destroy \
+        pf pf-stop pf-grafana pf-prometheus pf-alertmanager pf-argocd
