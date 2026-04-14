@@ -16,6 +16,7 @@
 | [github-actions-gcp-auth.md](github-actions-gcp-auth.md) | GitHub Actions에서 GCP 인증을 위한 Workload Identity Federation 설정 절차 |
 | [adr/](adr/) | Architecture Decision Records — 주요 기술 선택의 배경과 트레이드오프 |
 | [runbook/](runbook/) | 장애 유형별 대응 절차 |
+| [sre-sample-app-migration.md](sre-sample-app-migration.md) | sample-app → sre-sample-app 전환 계획 (node pool 재구성, MSA 아키텍처 포함) |
 
 ---
 

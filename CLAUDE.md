@@ -73,6 +73,13 @@ cloud-sre-platform/
 단계별 체크리스트 → [docs/PLAN.md](docs/PLAN.md)
 진행 중 이슈 → [docs/ISSUES.md](docs/ISSUES.md)
 
+### sample-app 전환 예정
+
+현재 `sample-app/`의 단순 FastAPI 앱은 추후 MSA 기반 [sre-sample-app](https://github.com/jaehoon9875/sre-sample-app)으로 교체될 예정이다.
+앱이 완성되면 Terraform node pool 재구성(system / app / data / batch pool 4개)과 함께 이 인프라도 수정한다.
+
+전환 상세 계획 → [docs/sre-sample-app-migration.md](docs/sre-sample-app-migration.md)
+
 ---
 
 ## Git Conventions
